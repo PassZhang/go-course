@@ -29,5 +29,11 @@
 17. error.go
 18. errors.go
 19. defer.go
-20. 
+20. forerror.go
+21. panic.go
+22. 
 
+建立目录 main
+    1. main.go
+    2. utils.go   // 关闭GO111MODULE=off, go build
+    3. 
