@@ -852,7 +852,7 @@ go提供complex64和complex128两种附中类型，针对complex64复数的实�
 - 十进制表示法:1 + 2i， , i*i = -1, 1为实部， 2为虚部
 
 常用函数：
-- complex： 工厂函数，通过两个参数创建一个复数
+- complex： 工厂函数，通过两个参数创建一个复数()
 - real： 用于获取复数的实部
 - imag： 用于获取复数的虚部
   
@@ -2480,9 +2480,2089 @@ PS E:\go-phase-two\go-course> go run test.go
 
 
 ### 操作 
-获取切片长度和容量
+1. 获取切片长度和容量
 使用len 函数可以获取切片的长度，使用cap函数可以获取切片的容量
 
 ```go
+package main
+
+import "fmt"
+
+func main() {
+	students := make([]string, 3, 5)
+	fmt.Println(len(students), cap(students))
+
+	fmt.Printf("%q\n", students)
+}
+
+
+
+PS E:\go-phase-two\go-course> go run test.go
+3 5
+["" "" ""]
+```
+
+
+2. 访问和修改
+   通过对编号对切片元素进行访问和修改，元素的编号从左到右依次为：0， 1， 2， ..., n(n为切片长度-1)
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	students := make([]string, 3, 5)
+
+	fmt.Printf("%q, %q\n", students[0], students[1])
+	students[0] = "KK"
+	students[1] = "bb"
+	students[2] = "aa"
+
+	fmt.Printf("%q, %q, %q\n", students[0], students[1], students[2])
+	fmt.Printf("%q\n", students)
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+"", ""
+"KK", "bb", "aa"
+["KK" "bb" "aa"]
+```
+
+
+3. 切片：slice[start:end]用于创建一个新的切片， end <= src_cap
+   
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	teachers := [...]string{"kk", "ww", "aa", "xx", "dd"}
+	teachers00 := teachers[:]
+
+	teachers01 := teachers[0:3]
+	teachers02 := teachers[1:4]
+	teachers03 := teachers00[1:3]
+
+	fmt.Printf("%q\n", teachers)
+	fmt.Printf("%d, %d, %q\n", len(teachers), cap(teachers01), teachers01)
+	fmt.Printf("%d, %d, %q\n", len(teachers01), cap(teachers01), teachers01)
+	fmt.Printf("%d, %d, %q\n", len(teachers02), cap(teachers02), teachers02)
+	fmt.Printf("%d, %d, %q\n", len(teachers03), cap(teachers03), teachers03)
+
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+["kk" "ww" "aa" "xx" "dd"]
+5, 5, ["kk" "ww" "aa"]
+3, 5, ["kk" "ww" "aa"]
+3, 4, ["ww" "aa" "xx"]
+2, 4, ["ww" "aa"]
+```
+新创建切片长度和容量计算： len：end-start, cap: scr_cap-start
+
+切片共享底层数组，若某个切片元素发生变化，则数组和其他有共享元素的切片也会发生变化
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	teachers := [...]string{"kk", "ww", "aa", "xx", "dd"}
+	teachers00 := teachers[:]
+
+	teachers01 := teachers[0:3]
+	teachers02 := teachers[1:4]
+	teachers03 := teachers00[1:3]
+
+	fmt.Printf("%q\n", teachers)
+
+	teachers02[2] = "小林"
+
+	fmt.Printf("%d, %d, %q\n", len(teachers), cap(teachers), teachers)
+
+	fmt.Printf("%d, %d, %q\n", len(teachers), cap(teachers01), teachers01)
+	fmt.Printf("%d, %d, %q\n", len(teachers01), cap(teachers01), teachers01)
+	fmt.Printf("%d, %d, %q\n", len(teachers02), cap(teachers02), teachers02)
+	fmt.Printf("%d, %d, %q\n", len(teachers03), cap(teachers03), teachers03)
+}
+
+PS E:\go-phase-two\go-course> go run test.go
+["kk" "ww" "aa" "xx" "dd"]
+5, 5, ["kk" "ww" "aa" "小林" "dd"]
+5, 5, ["kk" "ww" "aa"]
+3, 5, ["kk" "ww" "aa"]
+3, 4, ["ww" "aa" "小林"]
+2, 4, ["ww" "aa"]
+```
+
+
+slice[start: end: cap]可用于限制新切片的容量值， end<= cap <= src_cap
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	teachers := [...]string{"kk", "ww", "aa", "xx", "dd"}
+	teachers00 := teachers[:]
+
+	teachers01 := teachers[0:3]
+	teachers02 := teachers[1:4]
+	teachers03 := teachers00[1:3]
+
+	fmt.Printf("%q\n", teachers)
+
+	teachers02[2] = "小林"
+
+	fmt.Printf("%d, %d, %q\n", len(teachers), cap(teachers), teachers)
+
+	fmt.Printf("%d, %d, %q\n", len(teachers), cap(teachers01), teachers01)
+	fmt.Printf("%d, %d, %q\n", len(teachers01), cap(teachers01), teachers01)
+	fmt.Printf("%d, %d, %q\n", len(teachers02), cap(teachers02), teachers02)
+	fmt.Printf("%d, %d, %q\n", len(teachers03), cap(teachers03), teachers03)
+
+	teachers04 := teachers[1:4:4]
+	teachers05 := teachers00[1:3:3]
+
+	fmt.Printf("%d, %d, %q\n", len(teachers02), cap(teachers02), teachers02)
+	fmt.Printf("%d, %d, %q\n", len(teachers03), cap(teachers03), teachers03)
+	fmt.Printf("%d, %d, %q\n", len(teachers04), cap(teachers04), teachers04)
+	fmt.Printf("%d, %d, %q\n", len(teachers05), cap(teachers05), teachers05)
+
+}
+
+
+
+PS E:\go-phase-two\go-course> go run test.go
+["kk" "ww" "aa" "xx" "dd"]
+5, 5, ["kk" "ww" "aa" "小林" "dd"]
+5, 5, ["kk" "ww" "aa"]
+3, 5, ["kk" "ww" "aa"]
+3, 4, ["ww" "aa" "小林"]
+2, 4, ["ww" "aa"]
+3, 4, ["ww" "aa" "小林"]
+2, 4, ["ww" "aa"]
+3, 3, ["ww" "aa" "小林"]
+2, 2, ["ww" "aa"]
+```
+
+
+
+4. 遍历 ()
+   可以通过for+len+访问方式或for-range方式对切片中元素进行遍历
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	langs := []string{"go", "python", "c#", "c", "c++", "lua", "lisp", "php", "rust"}
+
+	fmt.Printf("%q\n", langs[1:4:4])
+	fmt.Printf("%q\n", langs[1:3:3])
+
+	for i := 0; i < len(langs); i++ {
+		fmt.Printf("%d, %q\n", i, langs[i])
+	}
+
+	for i, v := range langs {
+		fmt.Printf("%d, %q\n", i, v)
+	}
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+["python" "c#" "c"]
+["python" "c#"]
+0, "go"
+1, "python"
+2, "c#"
+3, "c"
+4, "c++"
+5, "lua"
+6, "lisp"
+7, "php"
+8, "rust"
+0, "go"
+1, "python"
+2, "c#"
+3, "c"
+4, "c++"
+5, "lua"
+6, "lisp"
+7, "php"
+8, "rust"
+```
+
+使用for-range遍历切片，range返回两个元素分别为切片元素索引和值
+
+
+5. 增加元素
+   使用append对切片增加一个或多个元素并返回修改后切片，当长度在容量范围内时值增加长度，容量和底层数组不变。当长度常容量范围则会创建一个新的底层数组并对容量进行智能运算（元素数量<1024时,约按原容量1倍增加， >1024时约按原容量0.25倍增加）
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	nums := []int{1, 2, 3, 4, 5}
+
+	nums2 := nums[:]
+	fmt.Printf("%d, %d, %v\n", len(nums), cap(nums), nums)
+	fmt.Printf("%d, %d, %v\n", len(nums2), cap(nums2), nums)
+
+	nums2 = append(nums2, 6)
+	fmt.Printf("%d, %d, %v\n", len(nums), cap(nums), nums)
+	fmt.Printf("%d, %d, %v\n", len(nums2), cap(nums2), nums2)
+
+	nums2[0] = 0
+	fmt.Printf("%d, %d %v\n", len(nums), cap(nums), nums)
+	fmt.Printf("%d, %d, %v\n", len(nums2), cap(nums2), nums2)
+
+	nums2 = append(nums2, 0, 1, 3, 4, 5)
+	fmt.Printf("%d, %d\n", len(nums2), cap(nums2))
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+5, 5, [1 2 3 4 5]
+5, 5, [1 2 3 4 5]
+5, 5, [1 2 3 4 5]
+6, 10, [1 2 3 4 5 6]
+5, 5 [1 2 3 4 5]
+6, 10, [0 2 3 4 5 6]
+11, 20
+```
+
+6. 复制切片到另一个切片
+   复制元素数量为src元素数量和dest元素数量的最小值
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	user01 := []string{"00", "01"}
+	user02 := []string{"10", "11", "12"}
+	user03 := []string{"20", "21", "22", "23"}
+
+	fmt.Printf("%q, %q, %q\n", user01, user02, user03)
+	copy(user01, user02)
+	fmt.Printf("%q, %q, %q\n", user01, user02, user03)
+	copy(user03, user02)
+	fmt.Printf("%q, %q, %q\n", user01, user02, user03)
+
+}
+
+PS E:\go-phase-two\go-course> go run test.go
+["00" "01"], ["10" "11" "12"], ["20" "21" "22" "23"]
+["10" "11"], ["10" "11" "12"], ["20" "21" "22" "23"]
+["10" "11"], ["10" "11" "12"], ["10" "11" "12" "23"]
 
 ```
+
+
+### 使用 
+1. 移除元素
+```go
+
+package main
+
+import "fmt"
+
+func main() {
+	elements := []int{0, 1, 2, 3, 4, 5}
+	copy(elements[3:], elements[4:])
+	fmt.Println(elements)
+	fmt.Println(elements[:len(elements)-1])
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+[0 1 2 4 5 5]
+[0 1 2 4 5]
+
+```
+
+2. 队列
+   先进先出
+
+```go
+
+package main
+
+import "fmt"
+
+func main() {
+	queue := []int{}
+
+	queue = append(queue, 1)
+	queue = append(queue, 3)
+	queue = append(queue, 2)
+
+	fmt.Println(queue[0])
+	queue = queue[1:]
+	fmt.Println(queue[0])
+	queue = queue[1:]
+	fmt.Println(queue[0])
+
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+1
+3
+2
+```
+
+
+
+
+3. 堆栈
+
+先进后出
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	stack := []int{}
+	stack = append(stack, 1)
+	stack = append(stack, 3)
+	stack = append(stack, 2)
+
+	fmt.Println(stack[len(stack)-1])
+	stack = stack[:len(stack)-1]
+	fmt.Println(stack[len(stack)-1])
+	stack = stack[:len(stack)-1]
+	fmt.Println(stack[len(stack)-1])
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+2
+3
+1
+```
+
+## 多维切片
+
+切片的元素也可以是切片类型，此时称为多维切片
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 声明&初始化
+	points := [][]int{{1, 1}, {1, 2, 3}}
+	fmt.Printf("%T, %v, %V, %d\n", points, points, points[0], points[0][0])
+
+	// 修改
+	points[0] = []int{2, 2}
+	points[1][1] = 3
+
+	fmt.Println(points)
+
+	// 切片
+	fmt.Println(points[0:2])
+
+	// 遍历
+	for i := 0; i < len(points); i++ {
+		for j := 0; j < len(points[i]); j++ {
+			fmt.Printf("[%d, %d]: %v\n", i, j, points[i][j])
+		}
+	}
+
+	for i, line := range points {
+		for j, v := range line {
+			fmt.Printf("[%d, %d]: %v\n", i, j, v)
+		}
+	}
+
+	// append
+	points = append(points, []int{2, 3, 1})
+	points[0] = append(points[0], 1)
+	fmt.Println(points)
+
+	// copy
+	points2 := [][]int{{}, {}}
+
+	copy(points2, points)
+	fmt.Println(points2)
+}
+
+
+
+PS E:\go-phase-two\go-course> go run test.go
+[][]int, [[1 1] [1 2 3]], [%!V(int=1) %!V(int=1)], 1
+[[2 2] [1 3 3]]
+[[2 2] [1 3 3]]
+[0, 0]: 2
+[0, 1]: 2
+[1, 0]: 1
+[1, 1]: 3
+[1, 2]: 3
+[0, 0]: 2
+[0, 1]: 2
+[1, 0]: 1
+[1, 1]: 3
+[1, 2]: 3
+[[2 2 1] [1 3 3] [2 3 1]]
+[[2 2 1] [1 3 3]]
+```
+
+
+
+### 常用包 
+
+sort
+
+
+## 映射（map）
+
+映射是存储一系列无序的 key/value 对，通过 key 来对 value 进行操作（增、删、改、查）。
+映射的 key 只能为可使用==运算符的值类型（字符串、数字、布尔、数组），value 可以为任意类型
+
+### 声明 
+
+map 声明需要制定组成元素key 和value 的类型，在声明后，会被初始化为nil， 表示暂不存在的映射。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	var tels map[string]string
+	var points map[[2]int]float64
+
+	fmt.Printf("%T, %t, %v\n", tels, tels == nil, tels)
+	fmt.Printf("%T, %t, %v\n", points, points == nil, points)
+
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+map[string]string, true, map[]
+map[[2]int]float64, true, map[]
+```
+
+
+### 初始化 
+1. 使用字面量初始化：map[ktype]vtype{k1:v1, k2:v2, ..., kn:vn}
+2. 使用字面量初始化空映射： map[ktype]vtype{}
+3. 使用make函数初始化
+   make(map[ktype]vtype), 通过make函数创建映射
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	var tels = map[string]string{"kk": "1520000000", "ww": "1859999999"}
+	fmt.Printf("%q\n", tels)
+
+	var points = map[[2]int]float64{{1, 2}: 3, {4, 5}: 6}
+	fmt.Println(points)
+
+	scores := map[string]int{"kk": 80, "ww": 90}
+	fmt.Println(scores)
+
+	heighs := map[string]float64{}
+	fmt.Println(heighs)
+
+	weights := make(map[string]float64)
+	fmt.Println(weights)
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+map["kk":"1520000000" "ww":"1859999999"]
+map[[1 2]:3 [4 5]:6]
+map[kk:80 ww:90]
+map[]
+map[]
+```
+
+### 操作 
+1. 获取元素的数量
+   使用len函数获取映射元素的数量
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	var tels = map[string]string{"kk": "1520000000", "ww": "1859999999"}
+	fmt.Printf("%q\n", tels)
+
+	var points = map[[2]int]float64{{1, 2}: 3, {4, 5}: 6}
+	fmt.Println(points)
+
+	scores := map[string]int{"kk": 80, "ww": 90}
+	fmt.Println(scores)
+
+	heighs := map[string]float64{}
+	fmt.Println(heighs)
+
+	weights := make(map[string]float64)
+	fmt.Println(weights)
+
+	fmt.Println(len(tels), len(points), len(scores), len(heighs), len(weights))
+
+	
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+map["kk":"1520000000" "ww":"1859999999"]
+map[[1 2]:3 [4 5]:6]
+map[kk:80 ww:90]
+map[]
+map[]
+2 2 2 0 0
+```
+
+
+2. 访问 
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	students := map[int]string{1: "kk", 2: "ww"}
+	students01 := map[int]map[string]string{1: map[string]string{"name": "kk", "tel": "152xxxxxxxx"}}
+
+	fmt.Printf("%v, %q, %q\n", students, students[1], students[3])
+
+	fmt.Printf("%v, %q, %q, %t\n", students01, students01[1], students01[3], students01[3] == nil)
+}
+
+当访问 key 存在与映射时则返回对应的值，否则返回值类型的零值.
+```
+
+3. 判断key 是否存在
+   通过key 访问元素时可以接受两个值，第一个值为value， 第二个值为bool类型表示元素是否存在，若存在为true，否则为false
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	students := map[int]string{1: "kk", 2: "ww"}
+	students01 := map[int]map[string]string{1: map[string]string{"name": "kk", "tel": "152xxxxxxxx"}}
+
+	fmt.Printf("%v, %q, %q\n", students, students[1], students[3])
+
+	fmt.Printf("%v, %q, %q, %t\n", students01, students01[1], students01[3], students01[3] == nil)
+
+	student, ok := students[1]
+	fmt.Printf("%t, %v\n", ok, student)
+
+	student, ok = students[2]
+	fmt.Printf("%t, %v\n", ok, student)
+
+	student01, ok := students01[1]
+	fmt.Printf("%t, %v\n", ok, student01)
+
+	student01, ok = students01[2]
+	fmt.Printf("%t, %v\n", ok, student01)
+
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+map[1:kk 2:ww], "kk", ""
+map[1:map[name:kk tel:152xxxxxxxx]], map["name":"kk" "tel":"152xxxxxxxx"], map[], true
+true, kk
+true, ww
+true, map[name:kk tel:152xxxxxxxx]
+false, map[]
+```
+
+
+4. 修改&增加
+   使用key对映射赋值时当key 存在则修改key 对应的value， 若key 不存在则增加key 和value 
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	students := map[int]string{1: "kk", 2: "ww"}
+	students01 := map[int]map[string]string{1: map[string]string{"name": "kk", "tel": "152xxxxxxxx"}}
+
+	fmt.Printf("%v, %q, %q\n", students, students[1], students[3])
+
+	fmt.Printf("%v, %q, %q, %t\n", students01, students01[1], students01[3], students01[3] == nil)
+
+	student, ok := students[1]
+	fmt.Printf("%t, %v\n", ok, student)
+
+	student, ok = students[2]
+	fmt.Printf("%t, %v\n", ok, student)
+
+	student01, ok := students01[1]
+	fmt.Printf("%t, %v\n", ok, student01)
+
+	student01, ok = students01[2]
+	fmt.Printf("%t, %v\n", ok, student01)
+
+	students[1] = "KK" // key 存在，修改
+	students[3] = "WW" // key 不存在, 增加
+
+	fmt.Println(students)
+
+	students01[1]["tel"] = "1520000000"                                                 // key 存在，修改
+	students01[1]["addr"] = "西安市"                                                       // key 不存在，增加
+	students01[2] = map[string]string{"name": "www", "tel": "158000000", "addr": "北京市"} // key 不存在，增加
+	fmt.Println(students01)
+
+	students01[2] = map[string]string{"name": "xxx", "tel": "18888888888", "addr": "西安市"} // key存在， 修改
+	fmt.Println(students01)
+
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+map[1:kk 2:ww], "kk", ""
+map[1:map[name:kk tel:152xxxxxxxx]], map["name":"kk" "tel":"152xxxxxxxx"], map[], true
+true, kk
+true, ww
+true, map[name:kk tel:152xxxxxxxx]
+false, map[]
+map[1:KK 2:ww 3:WW]
+map[1:map[addr:西安市 name:kk tel:1520000000] 2:map[addr:北京市 name:www tel:158000000]]
+map[1:map[addr:西安市 name:kk tel:1520000000] 2:map[addr:西安市 name:xxx tel:18888888888]]
+
+```
+
+5. 删除
+   使用delete 函数删除映射中已经存在的key
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	students := map[int]string{1: "kk", 2: "ww"}
+	students01 := map[int]map[string]string{1: map[string]string{"name": "kk", "tel": "152xxxxxxxx"}}
+
+	fmt.Printf("%v, %q, %q\n", students, students[1], students[3])
+
+	fmt.Printf("%v, %q, %q, %t\n", students01, students01[1], students01[3], students01[3] == nil)
+
+	student, ok := students[1]
+	fmt.Printf("%t, %v\n", ok, student)
+
+	student, ok = students[2]
+	fmt.Printf("%t, %v\n", ok, student)
+
+	student01, ok := students01[1]
+	fmt.Printf("%t, %v\n", ok, student01)
+
+	student01, ok = students01[2]
+	fmt.Printf("%t, %v\n", ok, student01)
+
+	students[1] = "KK" // key 存在，修改
+	students[3] = "WW" // key 不存在, 增加
+
+	fmt.Println(students)
+
+	students01[1]["tel"] = "1520000000"                                                 // key 存在，修改
+	students01[1]["addr"] = "西安市"                                                       // key 不存在，增加
+	students01[2] = map[string]string{"name": "www", "tel": "158000000", "addr": "北京市"} // key 不存在，增加
+	fmt.Println(students01)
+
+	students01[2] = map[string]string{"name": "xxx", "tel": "18888888888", "addr": "西安市"} // key存在， 修改
+	fmt.Println(students01)
+
+	delete(students, 1)
+	delete(students, 4)
+	fmt.Println(students)
+	delete(students01[1], "addr")
+	delete(students01, 2)
+	fmt.Println(students01)
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+map[1:kk 2:ww], "kk", ""
+map[1:map[name:kk tel:152xxxxxxxx]], map["name":"kk" "tel":"152xxxxxxxx"], map[], true
+true, kk
+true, ww
+true, map[name:kk tel:152xxxxxxxx]
+false, map[]
+map[1:KK 2:ww 3:WW]
+map[1:map[addr:西安市 name:kk tel:1520000000] 2:map[addr:北京市 name:www tel:158000000]]
+map[1:map[addr:西安市 name:kk tel:1520000000] 2:map[addr:西安市 name:xxx tel:18888888888]]
+map[2:ww 3:WW]
+map[1:map[name:kk tel:1520000000]]
+```
+
+
+
+6. 遍历 
+   可通过for-range对映射中个元素进行遍历，range返回两个元素分别为映射的key 和 value
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	students := map[int]string{1: "kk", 2: "ww"}
+	students01 := map[int]map[string]string{1: map[string]string{"name": "kk", "tel": "152xxxxxxxx"}}
+
+	fmt.Printf("%v, %q, %q\n", students, students[1], students[3])
+
+	fmt.Printf("%v, %q, %q, %t\n", students01, students01[1], students01[3], students01[3] == nil)
+
+	student, ok := students[1]
+	fmt.Printf("%t, %v\n", ok, student)
+
+	student, ok = students[2]
+	fmt.Printf("%t, %v\n", ok, student)
+
+	student01, ok := students01[1]
+	fmt.Printf("%t, %v\n", ok, student01)
+
+	student01, ok = students01[2]
+	fmt.Printf("%t, %v\n", ok, student01)
+
+	students[1] = "KK" // key 存在，修改
+	students[3] = "WW" // key 不存在, 增加
+
+	fmt.Println(students)
+
+	students01[1]["tel"] = "1520000000"                                                 // key 存在，修改
+	students01[1]["addr"] = "西安市"                                                       // key 不存在，增加
+	students01[2] = map[string]string{"name": "www", "tel": "158000000", "addr": "北京市"} // key 不存在，增加
+	fmt.Println(students01)
+
+	students01[2] = map[string]string{"name": "xxx", "tel": "18888888888", "addr": "西安市"} // key存在， 修改
+	fmt.Println(students01)
+
+	for k, v := range students {
+		fmt.Printf("%v: %v\n", k, v)
+	}
+}
+
+
+
+PS E:\go-phase-two\go-course> go run test.go
+map[1:kk 2:ww], "kk", ""
+map[1:map[name:kk tel:152xxxxxxxx]], map["name":"kk" "tel":"152xxxxxxxx"], map[], true
+true, kk
+true, ww
+true, map[name:kk tel:152xxxxxxxx]
+false, map[]
+map[1:KK 2:ww 3:WW]
+map[1:map[addr:西安市 name:kk tel:1520000000] 2:map[addr:北京市 name:www tel:158000000]]
+map[1:map[addr:西安市 name:kk tel:1520000000] 2:map[addr:西安市 name:xxx tel:18888888888]]
+1: KK
+2: ww
+3: WW
+```
+
+### 使用
+
+统计演讲稿中"我有一个梦想"中各个英文字符出现的次数。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	article := `but i think that whatever personal rule of life you may choose it should not, except in rare and heroic cases, be incompatible with happiness. if you look around at the men and women whom you can call happy, you will see that they all have certain things in common.`
+
+	stats := make(map[rune]int)
+	for _, ch := range article {
+		if ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' {
+			stats[ch]++
+
+		}
+	}
+
+	for ch, cnt := range stats {
+		fmt.Printf("%c: %v\n", ch, cnt)
+	}
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+a: 19
+e: 22
+v: 2
+d: 4
+i: 15
+h: 15
+n: 16
+k: 2
+x: 1
+l: 12
+f: 3
+c: 9
+u: 8
+p: 7
+s: 9
+o: 19
+y: 7
+m: 7
+g: 1
+b: 3
+t: 17
+w: 5
+r: 8
+```
+
+
+
+
+
+# 函数 
+## 定义&调用
+函数用于代码块的逻辑封装，提供代码复用的最基本方式
+
+### 定义 
+
+函数包含函数名、行参列表、函数体和返回值列表，使用func进行声明，函数无参数或返回值时则形参列表和返回则列表省略。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	func name(parameters) returns {
+		body
+	}
+}
+
+
+
+```
+
+形参列表需要描述参数名及参数类型， 所有形参为函数块局部变量。返回值需要描述返回值类型。
+
+举例：
+1. 无参&无返回值
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+}
+
+func sayHello() {
+	fmt.Println("Hello World")
+}
+
+```
+
+2. 有参&无返回值
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	sayHi("kk")
+}
+
+func sayHi(name string) {
+	fmt.Printf("Hi, %s\n", name)
+}
+
+```
+
+
+3. 有参&有返回值
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+
+	n1, n2 := 1, 2
+	fmt.Printf("%d + %d = %d\n", n1, n2, add(n1, n2))
+}
+func add(n1 int, n2 int) int {
+	return n1 + n2
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+1 + 2 = 3
+```
+
+
+
+### 调用 
+函数通过函数名（实参列表）， 在调用过程中实参的每个数据会赋值给形参中的每个变量，因此实参列表类型和数量需要函数定义的形参一一对应。 针对函数返回值可通过变量赋值的方式接受。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 调用无参无返回值函数
+	sayHello()
+
+	// 调用有参无返回值函数
+	sayHi("KK")
+
+	// 调用有参有返回值函数
+	n1, n2 := 1, 2
+	fmt.Printf("%d + %d = %d\n", n1, n2, add(n1, n2))
+
+	n3 := add(4, 5)
+	fmt.Println(n3)
+
+	// 忽略函数返回值
+	add(3, 4)
+}
+
+func add(n1 int, n2 int) int {
+	return n1 + n2
+}
+
+func sayHello() {
+	fmt.Println("Hello World")
+}
+
+func sayHi(name string) {
+	fmt.Printf("Hi, %s\n", name)
+
+}
+
+
+Hello World
+Hi, KK
+1 + 2 = 3
+9
+```
+
+
+## 参数 
+
+### 类型合并
+
+在声明函数中若存在多个连续形参类型相同可以只保留最后一个参数类型名
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	mergeFuncArgsType(1, 2, "3", "4", "5", true)
+
+}
+
+// 合并相同类型参数类型名
+func mergeFuncArgsType(n1, n2 int, s1, s2, s3 string, b1 bool) {
+	fmt.Printf("%T, %T, %T, %T, %T, %T\n", n1, n2, s1, s2, s3, b1)
+	fmt.Println(n1, n2, s1, s2, s3, b1)
+}
+
+
+
+PS E:\go-phase-two\go-course> go run test.go
+int, int, string, string, string, bool
+1 2 3 4 5 true
+```
+
+
+
+### 可变参数 
+
+某些情况下函数需要处理形参数量可变，需要运算符…声明可变参数函数或在调用时传递可变参数
+
+1. 定义 
+   可变参数只能定义一个且只能在参数列表末端。在调用函数后，可变参数则被初始化为对应类型的切片。 
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 调用可变参数函数
+	printArgs(1, 2)
+	printArgs(1, 2, "3", "4", "5")
+}
+
+// 定义可变参数列表函数，至少有2个参数
+// 打印所有参数到控制台
+
+func printArgs(n1, n2 int, args ...string) {
+	fmt.Printf("%T, %T, %T\n", n1, n2, args)
+	fmt.Println(n1, n2, args)
+}
+
+PS E:\go-phase-two\go-course> go run test.go
+int, int, []string
+1 2 []
+int, int, []string
+1 2 [3 4 5]
+```
+
+
+2. 传递
+   在调用函数时， 也可以使用运算符...将切片解包传递到可变参数函数中
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 调用可变参数函数
+	printArgs(1, 2)
+	printArgs(1, 2, "3", "4", "5")
+
+	printArgs(1, 2, []string{"3", "4", "5", "6"}...)
+	args := []string{"3", "4", "5", "6", "8"}
+	printArgs(1, 2, args...)
+	printArgs(1, 2, args[:3]...)
+}
+
+// 定义可变参数列表函数，至少有2个参数
+// 打印所有参数到控制台
+
+func printArgs(n1, n2 int, args ...string) {
+	fmt.Printf("%T, %T, %T\n", n1, n2, args)
+	fmt.Println(n1, n2, args)
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+int, int, []string
+1 2 []
+int, int, []string
+1 2 [3 4 5]
+int, int, []string
+1 2 [3 4 5 6]
+int, int, []string
+1 2 [3 4 5 6 8]
+int, int, []string
+1 2 [3 4 5]
+```
+
+
+## 返回值 
+在函数提中可以使用return 关键字为函数调用这提供函数计算结果
+
+### 多返回值
+go 语言支持函数有多个返回值，在声明函数时使用括号包含多有返回值类型，并使用return返回对应数量的用逗号分隔数据。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println(calc(1, 2))
+
+}
+
+// 定义有多个返回值的函数
+// 计算两个参数的四则运算结果并返回
+
+func calc(n1, n2 int) (int, int, int, int) {
+	return n1 + n2, n1 - n2, n1 * n2, n1 / n2
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+3 -1 2 0
+```
+
+### 命名返回值 
+在函数返回值中可指定变量名，变量在调用时会根据类型使用零值进行初始化，在函数体重可进行赋值，同时在调用return时不需要添加返回值，go 语言自动将变量的最终结果进行返回
+
+在使用命名返回值时，当声明函数中存在多个练习返回值类型相同可只保留最后一个返回值类型名。
+
+
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println(calcReturnNamecalc(5, 2))
+}
+
+// 定义命名返回值函数
+
+func calcReturnNamecalc(n1, n2 int) (sum, difference, product, quotient int) {
+	sum, difference, product, quotient = n1+n2, n1-n2, n1*n2, n1/n2
+	return
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+7 3 10 2
+```
+
+## 递归
+
+递归是指函数直接或间接调用自己，递归常用于解决分治问题，将大问题分解为相同的小问题进行解决，需要关注中止条件。
+
+1. 计算n阶乘
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println(factorial(10))
+}
+
+/*
+计算n的阶乘
+n < 0 ： 错误的
+n = 0 或 1： 返回1
+n > 0 : n! = n * n - 1!
+*/
+func factorial(n int) int {
+	if n < 0 {
+		return -1
+
+	} else if n == 0 {
+		return 1
+	} else {
+		return n * factorial(n-1)
+	}
+}
+
+PS E:\go-phase-two\go-course> go run test.go
+3628800
+
+```
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println(factorial(3))
+}
+
+/*
+计算n的阶乘
+n < 0 错误
+n = 0 返回1
+n > 0: n! = n *  (n - 1)!
+*/
+
+func factorial(n int) int {
+	if n < 0 {
+		return 0
+	} else if n == 0 {
+		return 1
+	} else {
+		return n * factorial(n-1)
+	}
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+6
+```
+
+
+2. 汉诺塔小游戏
+
+基本版本：
+```go
+package main
+
+import "fmt"
+
+func main() {
+	tower("塔1", "塔2", "塔3", 3)
+
+}
+
+/*
+汉诺塔小游戏
+将所有a柱上的圆盘借助b柱移动到c柱，在移动过程中保证每个柱子上面的圆盘比下面的圆盘小
+n : a -> c(b)
+n=1 : a -> c
+n>1: n-1(a -> b(c); a -> c; n-1(b -> c((a))
+*/
+
+func tower(x, y, z string, n int) {
+	if n <= 0 {
+		return
+	}
+
+	if n == 1 {
+		fmt.Printf("%s - > %s\n", x, z)
+		return
+	}
+
+	tower(x, z, y, n-1)
+	fmt.Printf("%s - > %s\n", x, z)
+	tower(y, x, z, n-1)
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+塔1 - > 塔3
+塔3 - > 塔2
+塔1 - > 塔3
+塔2 - > 塔1
+塔2 - > 塔3
+塔1 - > 塔3
+```
+
+
+升级版本:
+```go
+package main
+
+import "fmt"
+
+func main() {
+	tower("塔1", "塔2", "塔3", 3)
+	mv("")
+}
+
+/*
+汉诺塔小游戏
+将所有a柱上的圆盘借助b柱移动到c柱，在移动过程中保证每个柱子上面的圆盘比下面的圆盘小
+n : a -> c(b)
+n=1 : a -> c
+n>1: n-1(a -> b(c); a -> c; n-1(b -> c((a))
+*/
+
+func tower(x, y, z string, n int) {
+	if n <= 0 {
+		return
+	}
+
+	if n == 1 {
+		fmt.Printf("%s - > %s\n", x, z)
+		return
+	}
+
+	tower(x, z, y, n-1)
+	fmt.Printf("%s - > %s\n", x, z)
+	tower(y, x, z, n-1)
+}
+
+func mv(N, M string, disks int) {
+	fmt.Printf("第 %d 次移动 : 把 %d 号圆盘从 %s ->移到->  %s\n", n, disks, N, M)
+}
+
+```
+
+
+## 函数类型
+函数也可以赋值给变量，存储在数组、切片、映射中， 也可以作为参数传递给函数或作为函数返回值进行返回。
+
+### 声明&初始化&调用
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+
+	// 定义函数类型变量，并使用零值nil进行初始化
+	var callback func(n1, n2 int) (r1, r2, r3, r4 int)
+	fmt.Printf("%T, %v\n", callback, callback)
+
+	callback = calc             // 赋值为函数calc
+	fmt.Println(callback(5, 2)) // 调用calc函数
+
+	callback = calcReturnNamecalc // 赋值函数为calcReturnNamecalc
+	fmt.Println(callback(8, 2))
+}
+
+// 定义有多个返回值的函数
+// 计算两个参数的四则运算结果并返回
+func calc(n1, n2 int) (int, int, int, int) {
+	return n1 + n2, n1 - n2, n1 * n2, n1 / n2
+}
+
+// 定义命名返回值函数
+func calcReturnNamecalc(n1, n2 int) (sum, difference, product, quotient int) {
+	sum, difference, product, quotient = n1+n2, n1-n2, n1*n2, n1/n2
+	return
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+func(int, int) (int, int, int, int), <nil>
+7 3 10 2
+10 6 16 4
+```
+
+
+### 声明&调用参数类型为函数的函数
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	names := []string{"kk", "ww", "aa"}
+	pringResult(line, names...)
+	pringResult(colume, names...)
+}
+
+/*
+定义接收函数类型作为参数的函数
+*/
+
+func pringResult(pf func(...string), list ...string) {
+	pf(list...)
+}
+
+func line(list ...string) {
+	fmt.Print("|")
+	for _, e := range list {
+		fmt.Print(e)
+		fmt.Print("\t|")
+	}
+	fmt.Println()
+	fmt.Println()
+}
+
+func colume(list ...string) {
+	for _, e := range list {
+		fmt.Println(e)
+	}
+	fmt.Println()
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+|kk     |ww     |aa     |
+
+kk
+ww
+aa
+```
+
+## 匿名函数与闭包
+
+### 匿名函数 
+
+不需要定义名字的函数叫做匿名函数，常用作帮助函数在局部代码中使用或作为其他函数的参数。
+
+```go
+// 定义匿名函数并赋值给hi 
+hi := func(name string) {
+	fmt.Printf("Hi, %s\n", name)
+}
+
+hi("kk")
+hi("ww")
+
+//定义匿名函数并进行调用
+func() {
+	fmt.Println("我是匿名函数，我在使用")
+}()
+
+// 使用匿名函数作为pringResult的参数
+printResult(func(list ...string) {
+	for i, v := range list {
+		fmt.Printf("%d: %s\n", i, v)
+	}
+}, names...)
+
+
+
+```
+
+
+### 闭包
+
+匿名函数又叫闭包，是指在函数内定义的匿名函数引用外部函数的变量，只要匿名函数继续使用外部函数赋值的变量不会被自动销毁。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 使用闭包函数
+	base2 := addBase(2)
+	base10 := addBase(10)
+
+	fmt.Println(base2(1), base10(1))
+	fmt.Println(base2(5), base10(5))
+	fmt.Println(base2(10), base10(10))
+}
+
+// 定义闭包函数，返回一个匿名函数用于计算与base元素的和
+
+func addBase(base int) func(int) int {
+	return func(num int) int {
+		return base + num
+	}
+
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+3 11
+7 15
+12 20
+```
+
+
+## 值类型和引用类型
+
+值类型和引用类型的差异在于赋值同类型新变量后，对新变量进行修改是否能够影响原来的变量，若不能则为值类型，若能则为引用类型
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+
+	name, age, heigh, isBoy := "Silence", 30, 1.58, false // 定义字符串，数值，布尔类型
+	pointer := new(int)                                   // 定义指针类型
+	scores := [...]int{1, 2, 3}                           // 定义数组类型
+	names := make([]string, 1, 3)                         // 定义切片类型
+	user := make(map[int]string)                          // 定义映射类型
+
+	name2, age2, heigh2, isBoy2, pointer2, scores2, names2, user2 := name, age, heigh, isBoy, pointer, scores, names, user
+
+	name2 = "kk"
+	age2 = 31
+	heigh2 = 1.30
+	isBoy2 = true
+	scores2[0] = 0
+	pointer2 = &age
+	names2[0] = "kk"
+	user2[1] = "kk"
+
+	fmt.Println(name, age, heigh, isBoy, scores, pointer, names, user)
+	fmt.Println(name2, age2, heigh2, isBoy2, scores2, pointer2, names2, user2)
+}
+
+PS E:\go-phase-two\go-course> go run test.go
+Silence 30 1.58 false [1 2 3] 0xc0000100a8 [kk] map[1:kk]
+kk 31 1.3 true [0 2 3] 0xc0000100a0 [kk] map[1:kk]
+
+```
+
+
+- 值类型： 数值， 布尔， 字符串， 指针， 数组， 结构体
+- 引用类型： 切片， 映射， 接口等
+
+针对值类型可以借助指针修改原值
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+
+	name, age, heigh, isBoy := "Silence", 30, 1.58, false // 定义字符串，数值，布尔类型
+	pointer := new(int)                                   // 定义指针类型
+	scores := [...]int{1, 2, 3}                           // 定义数组类型
+	names := make([]string, 1, 3)                         // 定义切片类型
+	user := make(map[int]string)                          // 定义映射类型
+
+	name2, age2, heigh2, isBoy2, pointer2, scores2, names2, user2 := name, age, heigh, isBoy, pointer, scores, names, user
+
+	name2 = "kk"
+	age2 = 31
+	heigh2 = 1.30
+	isBoy2 = true
+	scores2[0] = 0
+	pointer2 = &age
+	names2[0] = "kk"
+	user2[1] = "kk"
+
+	fmt.Println(name, age, heigh, isBoy, scores, pointer, names, user)
+	fmt.Println(name2, age2, heigh2, isBoy2, scores2, pointer2, names2, user2)
+
+	fmt.Printf("%p, %p, %p, %p, %p, %p, %p %p\n", &name, &age, &heigh, &isBoy, &scores, &pointer, &names, &user)
+	fmt.Printf("%p, %p, %p, %p, %p, %p, %p %p\n", &name2, &age2, &heigh2, &isBoy2, &scores2, &pointer2, &names2, &user2)
+}
+
+
+package main
+
+import "fmt"
+
+func main() {
+
+	name, age, heigh, isBoy := "Silence", 30, 1.58, false // 定义字符串，数值，布尔类型
+	pointer := new(int)                                   // 定义指针类型
+	scores := [...]int{1, 2, 3}                           // 定义数组类型
+	names := make([]string, 1, 3)                         // 定义切片类型
+	user := make(map[int]string)                          // 定义映射类型
+
+	name2, age2, heigh2, isBoy2, pointer2, scores2, names2, user2 := name, age, heigh, isBoy, pointer, scores, names, user
+
+	name2 = "kk"
+	age2 = 31
+	heigh2 = 1.30
+	isBoy2 = true
+	scores2[0] = 0
+	pointer2 = &age
+	names2[0] = "kk"
+	user2[1] = "kk"
+
+	fmt.Println(name, age, heigh, isBoy, scores, pointer, names, user)
+	fmt.Println(name2, age2, heigh2, isBoy2, scores2, pointer2, names2, user2)
+
+	fmt.Printf("%p, %p, %p, %p, %p, %p, %p %p\n", &name, &age, &heigh, &isBoy, &scores, &pointer, &names, &user)
+	fmt.Printf("%p, %p, %p, %p, %p, %p, %p %p\n", &name2, &age2, &heigh2, &isBoy2, &scores2, &pointer2, &names2, &user2)
+}
+
+```
+
+
+针对值类型和引用类型在赋值后新旧变量的地址并不相同，只是引用类型在底层共享数据结构(其中包含指针类型元素)
+
+## 值传递和引用传递
+
+### 值传递 
+
+在 Go 语言中参数传递默认均为值传递（形参为实参变量的副本），对于引用类型数据因其底层共享数据结构，所以在函数内可对引用类型数据修改从而影响函数外的原变量信息
+
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	e1, e2 := "kk", []string{"kk", "silence"}
+
+	// 值传递
+	// 在函数内修改值类型
+	fmt.Printf("e1: %p %v\n", &e1, e1)
+	func(e string) {
+		fmt.Printf("e: %p %v\n", &e, e)
+		e = "silence"
+	}(e1)
+
+	// 在函数内修改引用类型
+	fmt.Printf("e2: %p %v\n", &e2, e2)
+	func (e []string) {
+		fmt.Printf("e: %p %v\n", &e, e)
+		e[1] = "woniu"
+	}(e2)
+
+	fmt.Println(e1, e2)
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+e1: 0xc0000461f0 kk
+e: 0xc000046210 kk
+e2: 0xc0000044a0 [kk silence]
+e: 0xc000004520 [kk silence]
+kk [kk woniu]
+```
+
+
+### 应用传递
+
+可以通过将变量的地址通过指定类型传递给函数，此时可通过指针对函数外的原变量进行修改。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	e1, e2 := "kk", []string{"kk", "silence"}
+
+	// 值传递
+	// 在函数内修改值类型
+	fmt.Printf("e1: %p %v\n", &e1, e1)
+	func(e *string) {
+		fmt.Printf("e: %p %v\n", &e, *e)
+		*e = "silence"
+	}(&e1)
+
+	// 在函数内修改引用类型
+	fmt.Printf("e2: %p %v\n", &e2, e2)
+	func(e *[]string) {
+		fmt.Printf("e: %p %v\n", &e, *e)
+		(*e)[1] = "woniu"
+	}(&e2)
+
+	fmt.Println(e1, e2)
+
+}
+
+
+PS E:\go-phase-two\go-course> go run test.go
+e1: 0xc00005a1e0 kk
+e: 0xc00009c020 kk
+e2: 0xc000068440 [kk silence]
+e: 0xc00009c028 [kk silence]
+silence [kk woniu]
+```
+
+
+## 错误处理 
+### error 接口 
+
+Go 语言通过 error 接口实现错误处理的标准模式，通过使用函数返回值列表中的最后一个值返回错误信息，将错误的处理交由程序员主动进行处理。
+
+```go
+
+// 定义除法函数，若除数为0则使用error返回错误信息
+func division(n1, n2 int) (int, error) {
+	if n2 == 0 {
+		return 0, errors.New("除数为0")
+
+	}
+	return n1 / n2, nil
+}
+
+// 处理函数返回的错误
+for _, v := range [...]int{0, 3} {
+	if r, err := division(6, v); err != nil {
+		fmt.Println(err)
+
+	} else {
+		fmt.Println(r)
+	}
+}
+```
+
+error 接口的初始化方法
+
+1. 通过errors 包的New 方法创建
+
+2. 通过fmt.Errorf 方法创建 
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+)
+
+func main() {
+
+	err1, err2 := errors.New("error: 1"), fmt.Errorf("error: %d", 2)
+	fmt.Printf("%T, %T, %v, %v", err1, err2, err1, err2)
+}
+```
+
+### defer 
+
+defer 关键字用户声明函数，不论函数是否发生错误都在函数执行最后执行(return 之前)，若使用 defer 声明多个函数，则按照声明的顺序，先声明后执行（堆） ，常用来做资源释放，记录日志等工作
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+
+	defer func() {
+		fmt.Println("defer 01")
+	}()
+
+	defer func() {
+		fmt.Println("defer 02")
+	}()
+
+	defer func() {
+		fmt.Println("defer 03")
+	}()
+
+	fmt.Println("over")
+}
+
+```
+
+
+
+### panic 与 recover 函数 
+
+go 语言提供panic 与 recover 函数用于处理运行时错误， 当调用panic 抛出错误，中断原有的控制流程，常用于不可修复性错误。recover 函数用于中止错误处理流程，仅在defer 语句中的函数中有效，用于截取错误处理流程，recover只能捕获到最后一个错误。
+
+1. panic 
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	defer func() {
+		fmt.Println("defer 01")
+
+	}()
+
+	panic("error 00")
+}
+
+defer 01
+panic: error 00
+
+goroutine 1 [running]:
+main.main()
+        E:/go-phase-two/go-course/test.go:13 +0x66
+exit status 2
+```
+
+2. recover 
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func init() {
+	fmt.Println("init")
+}
+
+func main() {
+	fmt.Println("main")
+}
+
+// 当未发生panic则recover函数得到的结果为nil
+
+func success() {
+	defer func() {
+		fmt.Println(recover())
+	}()
+	fmt.Println("success")
+}
+
+// 当未发生panic 则recover 函数的得到的结果为panic传递的参数
+func failure() {
+	defer func() {
+		fmt.Println(recover())
+	}()
+	fmt.Println("failure")
+	panic("error")
+}
+
+// recover 只能获取最后依次的panic信息
+
+func failure2() {
+	defer func() {
+		fmt.Println(recover())
+	}()
+
+	defer func() {
+		fmt.Println("failure 02")
+		panic("error 02")
+	}()
+
+	fmt.Println("failure")
+	panic("error")
+}
+
+
+
+PS E:\go-phase-two\go-course> go run test.go
+init
+main
+```
+
+
+
+# 包 
+
+包是函数和数据的集合，将有相关特性的函数和数据放在统一的文件/目录进行管理，每个包都可以作为独立的单元维护并提供给其他项目使用。
+
+## 声明 
+
+go 源文件都需要在开头使用package 声明所在包，包名告知编译器哪些包的源代码用于编译库文件，其次包名用于限制包内成员对外的可见性，最后包名用于在包外对外公开成员的访问。
+
+包名使用简短的小写字母，常与所在目录名保持一致，一个包中可以由多个 Go 源文件，但必须使用相同包名
+
+
+![](https://raw.githubusercontent.com/PassZhang/passzhang.github.io/images-picgo/20200910155207.png)
+
+声明两个包，路径分别为 gpkgname/pkg01 和 gpkgname/pkg02
+
+## 导入&调用 
+
+在使用包时需要使用 import 将包按路径名导入，再通过包名调用成员
+
+可通过 import 每行导入一个包，也可使用括号包含所有包并使用一个 import 导入
+
+![](https://raw.githubusercontent.com/PassZhang/passzhang.github.io/images-picgo/20200910155513.png)
+
+工作目录结构说明：
+- bin: 用于放置发布的二进制程序
+- pkg： 用于放置发布的库文件
+- src： 用于放置源代码
+
+
+**运行:**
+a) 将 E:\go-phase-two\go-course\good_print 目录添加到 GOPATH 环境变量中
+```go
+# bash是 powershell
+
+$env:GOPATH="E:\go-phase-two\go-course\good_print"
+$env:GOPATH
+ls env:
+```
+
+b) 编译&运行
+- 使用 go build 编译二进制文件
+命令：go build gpkgmain
+说明：编译路径 gpkgmain 下的包，main 包，则在当前目录产生以 pkgmain 命名的二进制程序
+
+- 使用 go run 运行二进制文件
+命令：go run gpkgmain
+
+- 使用 go install 编译并发布二进制文件
+命令：go install gpkgmain
+说明：编译并发布路径 gpkgmain 下的包，main 包，则在将编译后的以 pkgmain 命名的二进制程序拷贝到 bin 目录
+
+- 使用 go install 编译发布库文件
+命令：go install gpkgname/pkg01
+说明：编译并发布路径 gpkgname/pkg01 下的包，非 main 包，则在将编译的以包名命名的库文件拷贝到 pkg/GOOS_GOARCH 目录下 ⚫ 使用 go install 编译发布所有二进制和库文件
+
+命令：go install ./…
+说明：编译并发布当前路径下的所有二进制程序和库文件
+注意：Go 语言不允许交叉导入包
+
+## 导入形式
+
+1) 绝对路径导入
+在 GOPATH 目录中查找包
+示例：
+	- import "fmt"
+	- import "gpkgname/pkg01"
+	
+2) 相对路径导入
+在当前文件所在的目录查找
+示例：import "./gpkgname/pkg02"
+
+3) 点导入
+在调用点导入包中的成员时可以直接使用成员名称进行调用（省略包名）
+
+```go
+package main
+
+import . "fmt"
+
+
+func main()  {
+	Println("Hello World")
+}
+```
+
+4) 别名导入
+当导入不同路径的相同包名时，可以别名导入为包重命名，避免冲突
+
+```go
+package main
+
+import f "fmt"
+
+
+func main()  {
+	f.Println("Hello World")
+}
+```
+
+5) 下划线导入
+Go 不允许包导入但未使用，在某些情况下需要初始化包，使用空白符作为别名进行导入，从而使得包中的初始化函数可以执行
+
+```go
+package main
+
+import _ "fmt"
+
+
+func main()  {
+	Println("Hello World")
+}
+```
+
+
+## 成员可见性
+
+Go 语言使用名称首字母大小写来判断对象(常量、变量、函数、类型、结构体、方法等)的访问权限，首字母大写标识包外可见(公开的)，否者仅包内可访问(内部的)
+
+```go
+package pkg01
+
+// public
+var Name string = "good print pkg01"
+
+
+//private
+var version string = "1.0.0"
+```
+
+## main包和main函数
+
+main 包用于声明告知编译器将包编译为二进制可执行文件，在main包中的main函数是程序的入口，无返回值，无参数。
+
+## init 函数 
+
+init 函数时初始化包使用，无返回值，无参数。 建议每个包只定义一个。 init 函数在import 包时自动被调用（const-> var -> init）
+
+```go
+E:\go-phase-two\go-course\good_print\src\gpkgname\pkg01\module.go
+
+package pkg01
+
+import "fmt"
+
+// public
+var Name string = "good print pkg01"
+
+//private
+var version string = "1.0.0"
+
+func init() {
+	fmt.Println("Version: ", version)
+}
+
+```
+
+```go
+E:\go-phase-two\go-course\good_print\src\gpkgmain\main.go
+
+package main
+
+import (
+	"fmt"
+	"gpkgname/pkg01" // 导入包pkg01， 路径gpkgname/pkg01
+	"gpkgname/pkg02" // 导入包pkg02， 路径gpkgname/pkg02
+)
+
+func init() {
+	fmt.Println("main")
+}
+
+func main() {
+	fmt.Println("gpkgmain")
+	fmt.Println(pkg01.Name) // 调用pkg01包中的成员Name
+	fmt.Println(pkg02.Name) // 调用pkg02包中的成员Name
+}
+
+
+PS E:\go-phase-two\go-course\good_print> go run gpkgmain
+Version:  1.0.0
+main
+gpkgmain
+good print pkg01
+good print pkg02
+```
+
+
+## go包管理
+
+### 介绍
+
+Go1.11 版本提供 Go modules 机制对包进行管理，同时保留 GOPATH 和 vendor 机制，使用临时环境变量 
+
+GO111MODULE 进行控制，GO111MODULE 有三个可选值：
+a) 当 GO111MODULE 为 off 时，构建项目始终在 GOPATH 和 vendor 目录搜索目标程序依赖包
+
+b) 当 GO111MODULE 为 on 时，构建项目则始终使用 Go modules 机制，在 GOPATH/pkg/mod目录搜索目标程序依赖包
+
+c) 当 GO111MODULE 为 auto(默认)时,当构建源代码不在 GOPATH/src 的子目录且包含go.mod 文件，则使用 Go modules 机制，否则使用 GOPATH 和 vendor 机制
+
+### GOPATH+vendor机制
+
+a) vendor
+将项目依赖包拷贝到项目下的 vendor 目录，在编译时使用项目下 vendor 目录中的包进行编译
+解决问题：
+- 依赖外部包过多，在使用第三方包时需要使用 go get 进行下载
+- 第三方包在 go get 下载后不能保证开发和编译时版本的兼容性
+
+
+b) 包搜索顺序
+- 在当前包下的 vendor 目录查找
+- 向上级目录查找，直到 GOPATH/src/vendor 目录
+- 在 GOPATH 目录查找
+- 在 GOROOT 目录查找
+
+
+c) 第三方包
+可以借助 go get 工具下载和安装第三方包及其依赖，需要安装与第三方包匹配的代码
+管理工具，比如 git、svn 等
+
+
+![](https://raw.githubusercontent.com/PassZhang/passzhang.github.io/images-picgo/20200910192446.png
+
+go get 常用参数
+-  -d：仅下载依赖包
+-  -u：更新包并安装
+-  -x：打印执行的命令
+-  -v：打印构建的包
+-  -insecure：允许使用 http 协议下载包
+
+
+第三方包查找地址：
+-  https://godoc.org
+-  https://gowalker.org
+
+
+### go module 机制
+
+a) 优势：
+- 不用设置 GOPATH，代码可任意放置
+- 自动下载依赖管理
+- 版本控制
+- 不允许使用相对导入
+- replace 机制
+
+b) 初始化模块
+命令：go mod init modname
+
+
+c) 当前模块下的包
+对于当前模块下的包导入时需要使用 modname+packagename
+
