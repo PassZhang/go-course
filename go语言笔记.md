@@ -4560,9 +4560,2657 @@ a) 优势：
 - replace 机制
 
 b) 初始化模块
-命令：go mod init modname
+命令：go mod init modname 
+
+```go
+go mod init github.com/PassZhang/go-course/go_mod_test
+```
+
+
 
 
 c) 当前模块下的包
 对于当前模块下的包导入时需要使用 modname+packagename
 
+```go
+
+package main
+
+import (
+	"fmt"
+
+	"github.com/PassZhang/go-course/go_mod_test/src/gpkgname/pkg01" // 导入包pkg01， 路径gpkgname/pkg01
+	"github.com/PassZhang/go-course/go_mod_test/src/gpkgname/pkg02" // 导入包pkg02， 路径gpkgname/pkg02
+)
+
+func main() {
+	fmt.Println("go_mod")
+	fmt.Println(pkg01.Name) // 调用pkg01包中的成员Name
+	fmt.Println(pkg02.Name) // 调用pkg02包中的成员Name
+}
+
+```
+
+
+第三方包
+在使用 go mod tidy、go build、go test、go list 命令会自动将第三方依赖包写入到go.mod 文件中同时下载第三方依赖包到 GOPATH/pkg/mod/cache 目录，并在当前模块目录生成一个构建状态跟踪文件 go.sum,文件中记录当前 module 所有的顶层和间接依赖，以及这些依赖的校验和.
+
+```go
+package main
+
+import "github.com/astaxie/beego"
+
+func main() {
+	beego.Run()
+}
+
+
+PS E:\go-phase-two\go-course\go_beego_web> .\web.exe
+2020/09/10 20:07:31.841 [I]  http server Running on http://:8080
+
+```
+
+e) 常用命令
+- go mod tidy:整理依赖模块（添加新增的，删除未使用的）
+- go mod vendor: 将依赖模块拷贝到模块中的 vendor 目录
+- go build: 编译当前模块
+- go build ./...: 编译当前目录下的所有模块
+- go build -mod=vendor:使用当前模块下的 vendor 目录中的包进行编译
+- go mod download: 仅下载第三方模块
+- go mod grapha: 打印所有第三方模块
+- go list -m -json all：显示所有模块信息
+- go mod edit: 修改 go.mod 文件
+-require=pakcage@version
+-replace=old_package@version=new_package@version
+可以使用-replace 功能将包替换为本地包，实现相对导入
+
+
+### 标准包 
+Go 提供了大量标准包，可查看：https://golang.google.cn/pkg
+
+#### godoc 工具 
+使用 godoc 命令可以在本地启动 golang 网站，用于本地查看帮助手册
+
+#### 帮助 
+a) go list std：查看所有标准包
+
+b) go doc packagename：查看包的帮助信息
+
+c) go doc packagename.element：查看包内成员帮助信息
+
+# 结构体 
+
+## 自定义类型
+
+在 go 语言中使用 type 声明一种新的类型，语法格式为：
+```go
+type TypeName Formatter
+```
+Format 可以时任意内置类型、函数签名、结构体、接口
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	// 使用自定义结构
+	var counter Counter
+
+	fmt.Printf("%T:%v", counter, counter)
+	counter++
+	counter++
+
+	fmt.Println(counter)
+
+	// 使用自定义结构体User
+	var me User = make(User)
+	me["name"] = "kk"
+	me["addr"] = "西安"
+
+	fmt.Printf("%T: %#v\n", me, me)
+
+	names := []string{"kk", "ww", "ada"}
+	// 将函数column传递给printResult的pf(Callback类型)参数
+	printResult(column, names...)
+}
+
+// 自定义int 类型
+type Counter int
+
+// 自定义map[string] string 类型
+type User map[string]string
+
+// 自定义函数类型
+type Collback func(...string)
+
+// 定义接受自定义类型（函数类型）为参数的函数
+
+func printResult(pf Collback, list ...string) {
+	pf(list...)
+}
+
+func column(list ...string) {
+	for _, e := range list {
+		fmt.Println(e)
+	}
+	fmt.Println()
+}
+
+
+PS E:\go-phase-two\go-course> go run .\1test.go
+main.Counter:02
+main.User: main.User{"addr":"西安", "name":"kk"}
+kk
+ww
+ada
+```
+
+## 定义
+
+结构体定义使用struct 标识，需要指定其包含的属性(名和类型)， 在定义结构体时可以为结构体指定结构体名（命名结构体），用于后续声明结构体变量使用。
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	var kk Author
+	fmt.Printf("%T: %#v\n", kk, kk)
+
+	var pkk *Author
+	fmt.Printf("%T: %#v\n", pkk, pkk)
+}
+
+// 定义结构体
+type Author struct {
+	id   int
+	name string
+	addr string
+	tel  string
+	desc string
+}
+
+
+PS E:\go-phase-two\go-course> go run .\1test.go
+main.Author: main.Author{id:0, name:"", addr:"", tel:"", desc:""}
+*main.Author: (*main.Author)(nil)
+
+```
+
+
+## 声明 
+声明结构体变量只需要定义变量类型为结构体名，变量中的每个属性被初始化为对应类型的零值。也可以声明结构体指针变量，此时变量被初始化为nil。
+
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+// 定义结构体
+type Author struct {
+	id   int
+	name string
+	addr string
+	tel  string
+	desc string
+}
+
+
+func main() {
+	var kk Author
+	fmt.Printf("%T: %#v\n", kk, kk)
+
+	var pkk *Author
+	fmt.Printf("%T: %#v\n", pkk, pkk)
+}
+
+
+
+PS E:\go-phase-two\go-course> go run .\1test.go
+main.Author: main.Author{id:0, name:"", addr:"", tel:"", desc:""}
+*main.Author: (*main.Author)(nil)
+
+```
+
+
+## 初始化 
+
+使用结构体创建的变量叫做对应结构体的实例或者对象
+1. 使用结构体零值初始化结构体值对象
+   ```go
+   var kk Author = Author
+   ```
+
+2. 使用结构体字面量初始化结构体对象
+
+```go
+package main
+
+import "fmt"
+
+// type person struct {
+// 	name string
+// 	age  int
+// }
+
+type Author struct {
+	id   int
+	name string
+	addr string
+	tel  string
+	desc string
+}
+
+func main() {
+
+	// 按照结构体属性定义顺序初始化变量
+	var kk01 Author = Author{
+		1001,
+		"kk",
+		"西安",
+		"101000111",
+		"天天学习", // 结尾逗号不能省略
+	}
+
+	fmt.Printf("%T, %#v\n", kk01, kk01)
+
+	// 只初始化一部分属性或不按照定义顺序初始化使用命名方式
+	kk02 := Author{name: "kk2", id: 1002}
+	fmt.Printf("%T, %#v\n", kk01, kk01)
+	fmt.Printf("%T, %#v\n", kk02, kk02)
+
+	// 使用new函数进行初始化结构体指针
+	var kk03 *Author = new(Author)
+	fmt.Printf("%T: %#v, %#v\n", kk03, kk03, *kk03)
+
+	// // 用type 关键字定义一个结构体
+
+	// // 实例化一个结构体
+	// // 第一种情况
+	// p1 := person{}
+	// p1.name = "小麦"
+	// p1.age = 666
+	// fmt.Println(p1.name)
+	// fmt.Println(p1.age)
+
+	// // 第二种情况
+	// p2 := person{
+	// 	name: "小麦",
+	// 	age:  666,
+	// }
+	// // %#v 打印详细信息
+	// fmt.Printf("%#v\n", p2)
+}
+
+PS E:\go-phase-two\go-course> go run .\1test.go
+main.Author, main.Author{id:1001, name:"kk", addr:"西安", tel:"101000111", desc:"天天学习"}
+main.Author, main.Author{id:1001, name:"kk", addr:"西安", tel:"101000111", desc:"天天学习"}
+main.Author, main.Author{id:1002, name:"kk2", addr:"", tel:"", desc:""}
+*main.Author: &main.Author{id:0, name:"", addr:"", tel:"", desc:""}, main.Author{id:0, name:"", addr:"", 
+tel:"", desc:""}
+
+
+```
+
+3. 使用new函数进行初始化结构体指针对象
+
+```go
+package main
+
+import "fmt"
+
+// type person struct {
+// 	name string
+// 	age  int
+// }
+
+type Author struct {
+	id   int
+	name string
+	addr string
+	tel  string
+	desc string
+}
+
+func main() {
+
+	// 按照结构体属性定义顺序初始化变量
+	var kk01 Author = Author{
+		1001,
+		"kk",
+		"西安",
+		"101000111",
+		"天天学习", // 结尾逗号不能省略
+	}
+
+	fmt.Printf("%T, %#v\n", kk01, kk01)
+
+	// 只初始化一部分属性或不按照定义顺序初始化使用命名方式
+	kk02 := Author{name: "kk2", id: 1002}
+	fmt.Printf("%T, %#v\n", kk01, kk01)
+	fmt.Printf("%T, %#v\n", kk02, kk02)
+
+	// 使用new函数进行初始化结构体指针
+	var kk03 *Author = new(Author)
+	fmt.Printf("%T: %#v, %#v\n", kk03, kk03, *kk03)
+
+	// // 用type 关键字定义一个结构体
+
+	// // 实例化一个结构体
+	// // 第一种情况
+	// p1 := person{}
+	// p1.name = "小麦"
+	// p1.age = 666
+	// fmt.Println(p1.name)
+	// fmt.Println(p1.age)
+
+	// // 第二种情况
+	// p2 := person{
+	// 	name: "小麦",
+	// 	age:  666,
+	// }
+	// // %#v 打印详细信息
+	// fmt.Printf("%#v\n", p2)
+}
+
+PS E:\go-phase-two\go-course> go run .\1test.go
+main.Author, main.Author{id:1001, name:"kk", addr:"西安", tel:"101000111", desc:"天天学习"}
+main.Author, main.Author{id:1001, name:"kk", addr:"西安", tel:"101000111", desc:"天天学习"}
+main.Author, main.Author{id:1002, name:"kk2", addr:"", tel:"", desc:""}
+*main.Author: &main.Author{id:0, name:"", addr:"", tel:"", desc:""}, main.Author{id:0, name:"", addr:"", 
+tel:"", desc:""}
+
+
+```
+
+4. 使用结构体字面量初始化结构体指针对象
+
+```go
+package main
+
+import "fmt"
+
+type Author struct {
+	id   int
+	name string
+	addr string
+	tel  string
+	desc string
+}
+
+// type person struct {
+// 	name string
+// 	age  int
+// }
+
+func main() {
+
+	// 按照结构体属性定义顺序初始化变量
+	var kk01 Author = Author{
+		1001,
+		"kk",
+		"西安",
+		"101000111",
+		"天天学习", // 结尾逗号不能省略
+	}
+
+	fmt.Printf("%T, %#v\n", kk01, kk01)
+
+	// 只初始化一部分属性或不按照定义顺序初始化使用命名方式
+	kk02 := Author{name: "kk2", id: 1002}
+	fmt.Printf("%T, %#v\n", kk01, kk01)
+	fmt.Printf("%T, %#v\n", kk02, kk02)
+
+	// 使用new函数进行初始化结构体指针
+	var kk03 *Author = new(Author)
+	fmt.Printf("%T: %#v, %#v\n", kk03, kk03, *kk03)
+
+	// 使用结构体字面量初始化结构体指针对象
+	kk04 := &Author{id: 1004, name: "kk4"}
+	fmt.Printf("%T: %#v, %#v\n", kk04, kk04, *kk04)
+
+	// // 用type 关键字定义一个结构体
+
+	// // 实例化一个结构体
+	// // 第一种情况
+	// p1 := person{}
+	// p1.name = "小麦"
+	// p1.age = 666
+	// fmt.Println(p1.name)
+	// fmt.Println(p1.age)
+
+	// // 第二种情况
+	// p2 := person{
+	// 	name: "小麦",
+	// 	age:  666,
+	// }
+	// // %#v 打印详细信息
+	// fmt.Printf("%#v\n", p2)
+}
+
+
+PS E:\go-phase-two\go-course> go run .\1test.go
+main.Author, main.Author{id:1001, name:"kk", addr:"西安", tel:"101000111", desc:"天天学习"}
+main.Author, main.Author{id:1001, name:"kk", addr:"西安", tel:"101000111", desc:"天天学习"}
+main.Author, main.Author{id:1002, name:"kk2", addr:"", tel:"", desc:""}
+*main.Author: &main.Author{id:0, name:"", addr:"", tel:"", desc:""}, main.Author{id:0, name:"", addr:"", 
+tel:"", desc:""}
+*main.Author: &main.Author{id:1001, name:"kk4", addr:"", tel:"", desc:""}, main.Author{id:1001, name:"kk4", addr:"", tel:"", desc:""}
+
+```
+
+## New函数 
+
+Go 语言中常定义N(n)ew+结构体名命名的函数用于创建对应的结构体值对象或指针对象
+
+```go
+package main
+
+import "fmt"
+
+type Author struct {
+	id   int
+	name string
+	addr string
+	tel  string
+	desc string
+}
+
+func main() {
+
+	// 按照结构体属性定义顺序初始化变量
+	var kk01 Author = Author{
+		1001,
+		"kk",
+		"西安",
+		"101000111",
+		"天天学习", // 结尾逗号不能省略
+	}
+
+	fmt.Printf("%T, %#v\n", kk01, kk01)
+
+	// 只初始化一部分属性或不按照定义顺序初始化使用命名方式
+	kk02 := Author{name: "kk2", id: 1002}
+	fmt.Printf("%T, %#v\n", kk01, kk01)
+	fmt.Printf("%T, %#v\n", kk02, kk02)
+
+	// 使用new函数进行初始化结构体指针
+	var kk03 *Author = new(Author)
+	fmt.Printf("%T: %#v, %#v\n", kk03, kk03, *kk03)
+
+	// 使用结构体字面量初始化结构体指针对象
+	kk04 := &Author{id: 1004, name: "kk4"}
+	fmt.Printf("%T: %#v, %#v\n", kk04, kk04, *kk04)
+
+	kk05 := NewAuthor(1004, "kk05", "西安市", "15300000000", "看山是山")
+	fmt.Printf("%T: %#v\n", kk05, kk05)
+}
+
+func NewAuthor(id int, name, addr, tel, desc string) *Author {
+	return &Author{id, name, addr, tel, desc}
+}
+
+
+PS E:\go-phase-two\go-course> go run .\1test.go
+main.Author, main.Author{id:1001, name:"kk", addr:"西安", tel:"101000111", desc:"天天学习"}
+main.Author, main.Author{id:1001, name:"kk", addr:"西安", tel:"101000111", desc:"天天学习"}
+main.Author, main.Author{id:1002, name:"kk2", addr:"", tel:"", desc:""}
+*main.Author: &main.Author{id:0, name:"", addr:"", tel:"", desc:""}, main.Author{id:0, name:"", addr:"", 
+tel:"", desc:""}
+*main.Author: &main.Author{id:1004, name:"kk4", addr:"", tel:"", desc:""}, main.Author{id:1004, name:"kk4", addr:"", tel:"", desc:""}
+*main.Author: &main.Author{id:1004, name:"kk05", addr:"西安市", tel:"15300000000", desc:"看山是山"}  
+```
+
+
+## 属性的访问和修改
+
+通过结构体对象名/结构体指针对象. 属性名的方式来访问和修改对象的属性值 
+
+```go
+
+package main
+
+import "fmt"
+
+type Author struct {
+	id   int
+	name string
+	addr string
+	tel  string
+	desc string
+}
+
+func main() {
+
+	var kk Author = Author{
+		1000,
+		"kk",
+		"北京",
+		"101000111",
+		"天天开心", // 结尾逗号不能省略
+	}
+
+	// 按照结构体属性定义顺序初始化变量
+	var kk01 Author = Author{
+		1001,
+		"kk1",
+		"西安",
+		"101000111",
+		"天天学习", // 结尾逗号不能省略
+	}
+
+	fmt.Printf("%T, %#v\n", kk01, kk01)
+
+	// 只初始化一部分属性或不按照定义顺序初始化使用命名方式
+	kk02 := Author{name: "kk2", id: 1002}
+	fmt.Printf("%T, %#v\n", kk01, kk01)
+	fmt.Printf("%T, %#v\n", kk02, kk02)
+
+	// 使用new函数进行初始化结构体指针
+	var kk03 *Author = new(Author)
+	fmt.Printf("%T: %#v, %#v\n", kk03, kk03, *kk03)
+
+	// 使用结构体字面量初始化结构体指针对象
+	kk04 := &Author{id: 1004, name: "kk4"}
+	fmt.Printf("%T: %#v, %#v\n", kk04, kk04, *kk04)
+
+	kk05 := NewAuthor(1004, "kk05", "西安市", "15300000000", "看山是山")
+	fmt.Printf("%T: %#v\n", kk05, kk05)
+
+	// 使用结构体对象访问和修改属性
+	fmt.Printf("%d: %q\n", kk.id, kk.name)
+	fmt.Printf("%d: %q\n", kk01.id, kk01.name)
+	fmt.Printf("%d: %q\n", kk02.id, kk02.name)
+
+	kk02.addr = "西安市"
+	fmt.Println(kk02)
+
+	// 使用结构体指针变量访问属性
+	fmt.Println((*kk03).name)
+	fmt.Println(kk04.name) // 使用指针直接访问
+
+	// 使用结构体指针变量修改属性
+	(*kk03).name = "kk3"
+	kk04.addr = "上海市" // 使用指针直接修改
+	fmt.Println(kk03, kk04)
+}
+
+func NewAuthor(id int, name, addr, tel, desc string) *Author {
+	return &Author{id, name, addr, tel, desc}
+}
+
+
+PS E:\go-phase-two\go-course> go run .\1test.go
+main.Author, main.Author{id:1001, name:"kk1", addr:"西安", tel:"101000111", desc:"天天学习"}
+main.Author, main.Author{id:1001, name:"kk1", addr:"西安", tel:"101000111", desc:"天天学习"}
+main.Author, main.Author{id:1002, name:"kk2", addr:"", tel:"", desc:""}
+*main.Author: &main.Author{id:0, name:"", addr:"", tel:"", desc:""}, main.Author{id:0, name:"", addr:"", 
+*main.Author: &main.Author{id:1004, name:"kk4", addr:"", tel:"", desc:""}, main.Author{id:1004, name:"kk4", addr:"", tel:"", desc:""}
+*main.Author: &main.Author{id:1004, name:"kk05", addr:"西安市", tel:"15300000000", desc:"看山是山"}      
+1000: "kk"
+1001: "kk1"
+1002: "kk2"
+{1002 kk2 西安市  }
+
+kk4
+&{0 kk3   } &{1004 kk4 上海市  }
+```
+
+可以通过结构体指针对象的点操作直接对对象的属性值进行修改和访问。
+
+
+## 匿名结构体
+
+在定义变量时将类型指定为结构体的结构，此时叫匿名结构体。匿名结构体常用于初始化一次结构体变量的场景，例如项目配置
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+
+	var coordinate struct {
+		longitude float64
+		latitude  float64
+	}
+
+	me := struct {
+		name string
+		age  int
+		addr string
+	}{"silence", 30, "西安"}
+
+	// 匿名结构体数组
+	studs := []struct {
+		name string
+		addr string
+	}{{"silence", "西安"}, {"ww", "北京"}}
+
+	fmt.Println(coordinate, coordinate.longitude, coordinate.latitude)
+
+	fmt.Println(me, me.name, me.age, me.addr)
+
+	fmt.Println(studs)
+
+	for i, stud := range studs {
+		fmt.Println(i, stud, stud.name, stud.addr)
+	}
+}
+
+PS E:\go-phase-two\go-course> go run .\1test.go
+{0 0} 0 0
+{silence 30 西安} silence 30 西安
+[{silence 西安} {ww 北京}]
+0 {silence 西安} silence 西安
+1 {ww 北京} ww 北京
+```
+
+
+## 命名嵌入
+
+结构体命名嵌入是指结构体中的属性对应的类型也是结构体
+
+### 定义 
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+
+	// 定义收货人结构体（区域，街道，门牌号）
+	type Address struct {
+		region string
+		street string
+		no     string
+	}
+
+	// 定义收货人结构体（名字，电话，地址）
+	type User struct {
+		name string
+		tel  string
+		addr Address
+	}
+
+	// 声明& 初始化组合对象
+	var u1 User
+
+	fmt.Printf("%T, %#v\n", u1, u1)
+
+	var a1 Address = Address{
+		"陕西省西安市",
+		"开心路",
+		"001",
+	}
+
+	var u2 User = User{
+		"kk",
+		"15000000000",
+		a1,
+	}
+
+	u3 := User{
+		name: "ww",
+		tel:  "100000000001",
+		addr: Address{
+			"北京市",
+			"海淀路",
+			"001",
+		},
+	}
+
+	fmt.Println(u1, u2, u3)
+
+	// 属性的访问
+	fmt.Println(u2.addr)
+	fmt.Println(u2.addr.no)
+
+	// 属性的修改
+	u2.addr.no = "002"
+	fmt.Println(u2)
+}
+
+PS E:\go-phase-two\go-course> go run .\1test.go
+main.User, main.User{name:"", tel:"", addr:main.Address{region:"", street:"", no:""}}
+{  {  }} {kk 15000000000 {陕西省西安市 开心路 001}} {ww 100000000001 {北京市 海淀路 001}}
+{陕西省西安市 开心路 001}
+001
+{kk 15000000000 {陕西省西安市 开心路 002}}
+```
+### 声明和初始化
+
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+
+	// 定义收货人结构体（区域，街道，门牌号）
+	type Address struct {
+		region string
+		street string
+		no     string
+	}
+
+	// 定义收货人结构体（名字，电话，地址）
+	type User struct {
+		name string
+		tel  string
+		addr Address
+	}
+
+	// 声明& 初始化组合对象
+	var u1 User
+
+	fmt.Printf("%T, %#v\n", u1, u1)
+
+	var a1 Address = Address{
+		"陕西省西安市",
+		"开心路",
+		"001",
+	}
+
+	var u2 User = User{
+		"kk",
+		"15000000000",
+		a1,
+	}
+
+	u3 := User{
+		name: "ww",
+		tel:  "100000000001",
+		addr: Address{
+			"北京市",
+			"海淀路",
+			"001",
+		},
+	}
+
+	fmt.Println(u1, u2, u3)
+
+	// 属性的访问
+	fmt.Println(u2.addr)
+	fmt.Println(u2.addr.no)
+
+	// 属性的修改
+	u2.addr.no = "002"
+	fmt.Println(u2)
+}
+
+PS E:\go-phase-two\go-course> go run .\1test.go
+main.User, main.User{name:"", tel:"", addr:main.Address{region:"", street:"", no:""}}
+{  {  }} {kk 15000000000 {陕西省西安市 开心路 001}} {ww 100000000001 {北京市 海淀路 001}}
+{陕西省西安市 开心路 001}
+001
+{kk 15000000000 {陕西省西安市 开心路 002}}
+```
+
+### 属性的访问和修改
+
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+
+	// 定义收货人结构体（区域，街道，门牌号）
+	type Address struct {
+		region string
+		street string
+		no     string
+	}
+
+	// 定义收货人结构体（名字，电话，地址）
+	type User struct {
+		name string
+		tel  string
+		addr Address
+	}
+
+	// 声明& 初始化组合对象
+	var u1 User
+
+	fmt.Printf("%T, %#v\n", u1, u1)
+
+	var a1 Address = Address{
+		"陕西省西安市",
+		"开心路",
+		"001",
+	}
+
+	var u2 User = User{
+		"kk",
+		"15000000000",
+		a1,
+	}
+
+	u3 := User{
+		name: "ww",
+		tel:  "100000000001",
+		addr: Address{
+			"北京市",
+			"海淀路",
+			"001",
+		},
+	}
+
+	fmt.Println(u1, u2, u3)
+
+	// 属性的访问
+	fmt.Println(u2.addr)
+	fmt.Println(u2.addr.no)
+
+	// 属性的修改
+	u2.addr.no = "002"
+	fmt.Println(u2)
+}
+
+PS E:\go-phase-two\go-course> go run .\1test.go
+main.User, main.User{name:"", tel:"", addr:main.Address{region:"", street:"", no:""}}
+{  {  }} {kk 15000000000 {陕西省西安市 开心路 001}} {ww 100000000001 {北京市 海淀路 001}}
+{陕西省西安市 开心路 001}
+001
+{kk 15000000000 {陕西省西安市 开心路 002}}
+```
+
+
+## 匿名嵌入
+
+结构体匿名嵌入是指将已定义的结构体名直接声明在新的结构体中，从而实现对以后已有类型的扩展和修改。
+
+### 定义
+```go
+package main
+
+import (
+	"fmt"
+)
+
+// 定义地址结构体（区域，街道，门牌号）
+type Address struct {
+	region string
+	street string
+	no     string
+}
+
+// 定义收货人结构体（名字，电话，地址）
+type User struct {
+	name string
+	tel  string
+	addr Address
+}
+
+// 定义员工，匿名嵌入user结构体
+type Employee struct {
+	User
+	salary float64
+	title  string
+}
+
+func main() {
+
+	var ekk Employee
+	fmt.Printf("%T: %#v\n", ekk, ekk)
+
+	// 使用已有变量初始化
+
+	ekk02 := Employee{
+		User{
+			"kk",
+			"152000022222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"002",
+			},
+		},
+		22000,
+		"安全开发工程师",
+	}
+
+	ekk03 := Employee{
+		User{
+			"kk",
+			"153000033333",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"003",
+			},
+		},
+		23000,
+		"架构工程师",
+	}
+
+
+	fmt.Println(ekk02)
+	fmt.Println(ekk03)
+}
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+main.Employee: main.Employee{User:main.User{name:"", tel:"", addr:main.Address{region:"", street:"", no:""}}, salary:0, title:""}
+{{kk 152000022222 {陕西省西安市 锦业路 002}} 22000 安全开发工程师}
+{{kk 153000033333 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+```
+
+### 声明&初始化
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+// 定义地址结构体（区域，街道，门牌号）
+type Address struct {
+	region string
+	street string
+	no     string
+}
+
+// 定义收货人结构体（名字，电话，地址）
+type User struct {
+	name string
+	tel  string
+	addr Address
+}
+
+// 定义员工，匿名嵌入user结构体
+type Employee struct {
+	User
+	salary float64
+	title  string
+}
+
+func main() {
+
+	var ekk Employee
+	fmt.Printf("%T: %#v\n", ekk, ekk)
+
+	// 使用已有变量初始化
+
+	ekk02 := Employee{
+		User{
+			"kk",
+			"152000022222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"002",
+			},
+		},
+		22000,
+		"安全开发工程师",
+	}
+
+	ekk03 := Employee{
+		User{
+			"kk",
+			"153000033333",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"003",
+			},
+		},
+		23000,
+		"架构工程师",
+	}
+
+
+	fmt.Println(ekk02)
+	fmt.Println(ekk03)
+}
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+main.Employee: main.Employee{User:main.User{name:"", tel:"", addr:main.Address{region:"", street:"", no:""}}, salary:0, title:""}
+{{kk 152000022222 {陕西省西安市 锦业路 002}} 22000 安全开发工程师}
+{{kk 153000033333 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+```
+
+
+在初始化匿名嵌入的结构体对象时，需要遵循树状声明的结构，对于匿名嵌入的结构体可以使用结构体名来进行确定来指定初始化参数。
+
+### 属性的访问和修改
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+// 定义地址结构体（区域，街道，门牌号）
+type Address struct {
+	region string
+	street string
+	no     string
+}
+
+// 定义收货人结构体（名字，电话，地址）
+type User struct {
+	name string
+	tel  string
+	addr Address
+}
+
+// 定义员工，匿名嵌入user结构体
+type Employee struct {
+	User
+	salary float64
+	title  string
+}
+
+func main() {
+
+	var ekk Employee
+	fmt.Printf("%T: %#v\n", ekk, ekk)
+
+	// 使用已有变量初始化
+
+	ekk02 := Employee{
+		User{
+			"kk",
+			"152000022222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"002",
+			},
+		},
+		22000,
+		"安全开发工程师",
+	}
+
+	ekk03 := Employee{
+		User{
+			"kk",
+			"152000022222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"003",
+			},
+		},
+		23000,
+		"架构工程师",
+	}
+
+	fmt.Println(ekk02)
+	fmt.Println(ekk03)
+
+	// 针对匿名嵌入结构体属性，可以通过对象，结构体名称，属性名范围和修改属性值
+
+	fmt.Println(ekk03.User.name, ekk03.User.tel, ekk03.User.addr, ekk03.salary, ekk03.title)
+	ekk03.User.tel = "15200003333"
+	fmt.Println(ekk03)
+
+	// 针对匿名嵌入结构体属性值访问和修改时间可省略结构体名称
+	fmt.Println(ekk03.name, ekk03.tel, ekk03.addr, ekk03.salary, ekk03.title)
+
+	ekk03.tel = "15200004444"
+	fmt.Println(ekk03)
+}
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+main.Employee: main.Employee{User:main.User{name:"", tel:"", addr:main.Address{region:"", street:"", no:""}}, salary:0, title:""}
+{{kk 152000022222 {陕西省西安市 锦业路 002}} 22000 安全开发工程师}
+{{kk 152000022222 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+kk 152000022222 {陕西省西安市 锦业路 003} 23000 架构工程师
+{{kk 15200003333 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+kk 15200003333 {陕西省西安市 锦业路 003} 23000 架构工程师
+{{kk 15200004444 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+```
+
+
+在访问和修改嵌入结构体的属性值时，可以通过对象名.结构体名称.属性名的方式进行访问和修改，结构体名称可以省略（匿名成员有一个隐式的名称），因此不能嵌套两个相同名称的结构体。当被嵌入结构体和嵌入结构体有相同的属性名时，在访问和修改嵌入结构体成员的属性值时不能省略结构体名称.
+
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+// 定义地址结构体（区域，街道，门牌号）
+type Address struct {
+	region string
+	street string
+	no     string
+}
+
+// 定义收货人结构体（名字，电话，地址）
+type User struct {
+	name string
+	tel  string
+	addr Address
+}
+
+// 定义员工，匿名嵌入user结构体
+type Employee struct {
+	User
+	salary float64
+	title  string
+}
+
+// 定义员工，匿名嵌入User结构体，并于User结构体具有相同的属性名
+
+type Employee2 struct {
+	User
+	salary float64
+	title  string
+	addr   string
+}
+
+func main() {
+
+	var ekk Employee
+	fmt.Printf("%T: %#v\n", ekk, ekk)
+
+	// 使用已有变量初始化
+
+	ekk02 := Employee{
+		User{
+			"kk",
+			"152000022222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"002",
+			},
+		},
+		22000,
+		"安全开发工程师",
+	}
+
+	ekk03 := Employee{
+		User{
+			"kk",
+			"152000022222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"003",
+			},
+		},
+		23000,
+		"架构工程师",
+	}
+
+	fmt.Println(ekk02)
+	fmt.Println(ekk03)
+
+	// 针对匿名嵌入结构体属性，可以通过对象，结构体名称，属性名范围和修改属性值
+
+	fmt.Println(ekk03.User.name, ekk03.User.tel, ekk03.User.addr, ekk03.salary, ekk03.title)
+	ekk03.User.tel = "15200003333"
+	fmt.Println(ekk03)
+
+	// 针对匿名嵌入结构体属性值访问和修改时间可省略结构体名称
+	fmt.Println(ekk03.name, ekk03.tel, ekk03.addr, ekk03.salary, ekk03.title)
+
+	ekk03.tel = "15200004444"
+	fmt.Println(ekk03)
+
+	// 使用执行名称初始化
+	ekk04 := Employee2{
+		User: User{
+			"kk",
+			"15200002222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"003",
+			},
+		},
+		salary: 25000,
+		title:  "安全架构师",
+		addr:   "陕西省西安市高新路001",
+	}
+
+	fmt.Printf("%#v\n", ekk04)
+
+	// 分别访问别嵌入和想入结构体的addr属性
+	fmt.Println(ekk04.addr)
+	fmt.Println(ekk04.User.addr)
+
+	// 分别修改被嵌入和嵌入结构体的addr属性
+	ekk04.addr = "陕西省西安市高新路002"
+	fmt.Println(ekk04.addr)
+	fmt.Println(ekk04.User.addr)
+
+	ekk04.User.addr.no = "004"
+	fmt.Println(ekk04.addr)
+	fmt.Println(ekk04.User.addr)
+}
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+main.Employee: main.Employee{User:main.User{name:"", tel:"", addr:main.Address{region:"", street:"", no:""}}, salary:0, title:""}
+{{kk 152000022222 {陕西省西安市 锦业路 002}} 22000 安全开发工程师}
+{{kk 152000022222 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+kk 152000022222 {陕西省西安市 锦业路 003} 23000 架构工程师
+{{kk 15200003333 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+kk 15200003333 {陕西省西安市 锦业路 003} 23000 架构工程师
+{{kk 15200004444 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+main.Employee2{User:main.User{name:"kk", tel:"15200002222", addr:main.Address{region:"陕西省西安市", street:"锦业 
+路", no:"003"}}, salary:25000, title:"安全架构师", addr:"陕西省西安市高新路001"}
+陕西省西安市高新路001
+{陕西省西安市 锦业路 003}
+陕西省西安市高新路002
+{陕西省西安市 锦业路 003}
+陕西省西安市高新路002
+{陕西省西安市 锦业路 004}
+```
+
+
+## 指针类型嵌入
+
+结构体嵌入（命名&匿名）类型也可以为结构体指针
+
+### 定义 
+
+### 声明&初始化&操作 
+
+```go
+
+package main
+
+import (
+	"fmt"
+)
+
+// 定义地址结构体（区域,街道,门牌号）
+type Address struct {
+	region string
+	street string
+	no     string
+}
+
+// 定义收货人结构体（名字,电话,地址）
+type User struct {
+	name string
+	tel  string
+	addr Address
+}
+
+// 定义员工,匿名嵌入user结构体
+type Employee struct {
+	User
+	salary float64
+	title  string
+}
+
+// 定义员工,匿名嵌入User结构体,并于User结构体具有相同的属性名
+
+type Employee2 struct {
+	User
+	salary float64
+	title  string
+	addr   string
+}
+
+// 命名嵌入结构体指针
+type PUser struct {
+	name string
+	tel  string
+	addr *Address
+}
+
+// 匿名嵌入结构体指针
+type PEmployee struct {
+	*PUser
+	salary float64
+	title  string
+}
+
+func main() {
+
+	var ekk Employee
+	fmt.Printf("%T: %#v\n", ekk, ekk)
+
+	// 使用已有变量初始化
+
+	ekk02 := Employee{
+		User{
+			"kk",
+			"152000022222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"002",
+			},
+		},
+		22000,
+		"安全开发工程师",
+	}
+
+	ekk03 := Employee{
+		User{
+			"kk",
+			"152000022222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"003",
+			},
+		},
+		23000,
+		"架构工程师",
+	}
+
+	fmt.Println(ekk02)
+	fmt.Println(ekk03)
+
+	// 针对匿名嵌入结构体属性,可以通过对象,结构体名称,属性名范围和修改属性值
+
+	fmt.Println(ekk03.User.name, ekk03.User.tel, ekk03.User.addr, ekk03.salary, ekk03.title)
+	ekk03.User.tel = "15200003333"
+	fmt.Println(ekk03)
+
+	// 针对匿名嵌入结构体属性值访问和修改时间可省略结构体名称
+	fmt.Println(ekk03.name, ekk03.tel, ekk03.addr, ekk03.salary, ekk03.title)
+
+	ekk03.tel = "15200004444"
+	fmt.Println(ekk03)
+
+	// 使用执行名称初始化
+	ekk04 := Employee2{
+		User: User{
+			"kk",
+			"15200002222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"003",
+			},
+		},
+		salary: 25000,
+		title:  "安全架构师",
+		addr:   "陕西省西安市高新路001",
+	}
+
+	fmt.Printf("%#v\n", ekk04)
+
+	// 分别访问别嵌入和想入结构体的addr属性
+	fmt.Println(ekk04.addr)
+	fmt.Println(ekk04.User.addr)
+
+	// 分别修改被嵌入和嵌入结构体的addr属性
+	ekk04.addr = "陕西省西安市高新路002"
+	fmt.Println(ekk04.addr)
+	fmt.Println(ekk04.User.addr)
+
+	ekk04.User.addr.no = "004"
+	fmt.Println(ekk04.addr)
+	fmt.Println(ekk04.User.addr)
+
+	// 声明和初始化嵌入指针结构体对象
+	paddr := Address{"陕西省西安市", "锦业路", "001"}
+	puser := PUser{"kk", "15200000000", &paddr}
+
+	pemployee := PEmployee{
+		PUser:  &puser,
+		salary: 25000,
+		title:  "安全架构师",
+	}
+
+	fmt.Printf("%#v\n", pemployee)
+
+	//属性访问和修改
+	fmt.Println(paddr)      // no:001
+	fmt.Println(puser.addr) // no:001
+
+	puser.addr.no = "002"
+	fmt.Println(paddr)      // no:002
+	fmt.Println(puser.addr) // no:002
+
+	fmt.Println(puser.name)           // name: kk
+	fmt.Println(pemployee.PUser.name) // name: kk
+	fmt.Println(pemployee.name)       // name: kk
+
+	pemployee.name = "slience"
+
+	fmt.Println(puser.name)           // name: slience
+	fmt.Println(pemployee.PUser.name) // name: silence
+	fmt.Println(pemployee.name)       // name: slience
+}
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+main.Employee: main.Employee{User:main.User{name:"", tel:"", addr:main.Address{region:"", street:"", no:""}}, salary:0, title:""}
+{{kk 152000022222 {陕西省西安市 锦业路 002}} 22000 安全开发工程师}
+{{kk 152000022222 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+kk 152000022222 {陕西省西安市 锦业路 003} 23000 架构工程师
+{{kk 15200003333 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+kk 15200003333 {陕西省西安市 锦业路 003} 23000 架构工程师
+{{kk 15200004444 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+main.Employee2{User:main.User{name:"kk", tel:"15200002222", addr:main.Address{region:"陕西省西安市", street:"锦业 
+路", no:"003"}}, salary:25000, title:"安全架构师", addr:"陕西省西安市高新路001"}
+陕西省西安市高新路001
+{陕西省西安市 锦业路 003}
+陕西省西安市高新路002
+{陕西省西安市 锦业路 003}
+陕西省西安市高新路002
+{陕西省西安市 锦业路 004}
+main.PEmployee{PUser:(*main.PUser)(0xc000078450), salary:25000, title:"安全架构师"}
+{陕西省西安市 锦业路 001}
+&{陕西省西安市 锦业路 001}
+{陕西省西安市 锦业路 002}
+&{陕西省西安市 锦业路 002}
+kk
+kk
+kk
+slience
+slience
+slience
+```
+
+使用属性为指针类型底层共享数据结构，当底层数据发生变化，所有引用都会发生影响
+
+
+```go
+
+package main
+
+import (
+	"fmt"
+)
+
+// 定义地址结构体（区域,街道,门牌号）
+type Address struct {
+	region string
+	street string
+	no     string
+}
+
+// 定义收货人结构体（名字,电话,地址）
+type User struct {
+	name string
+	tel  string
+	addr Address
+}
+
+// 定义员工,匿名嵌入user结构体
+type Employee struct {
+	User
+	salary float64
+	title  string
+}
+
+// 定义员工,匿名嵌入User结构体,并于User结构体具有相同的属性名
+
+type Employee2 struct {
+	User
+	salary float64
+	title  string
+	addr   string
+}
+
+// 命名嵌入结构体指针
+type PUser struct {
+	name string
+	tel  string
+	addr *Address
+}
+
+// 匿名嵌入结构体指针
+type PEmployee struct {
+	*PUser
+	salary float64
+	title  string
+}
+
+func main() {
+
+	var ekk Employee
+	fmt.Printf("%T: %#v\n", ekk, ekk)
+
+	// 使用已有变量初始化
+
+	ekk02 := Employee{
+		User{
+			"kk",
+			"152000022222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"002",
+			},
+		},
+		22000,
+		"安全开发工程师",
+	}
+
+	ekk03 := Employee{
+		User{
+			"kk",
+			"152000022222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"003",
+			},
+		},
+		23000,
+		"架构工程师",
+	}
+
+	fmt.Println(ekk02)
+	fmt.Println(ekk03)
+
+	// 针对匿名嵌入结构体属性,可以通过对象,结构体名称,属性名范围和修改属性值
+
+	fmt.Println(ekk03.User.name, ekk03.User.tel, ekk03.User.addr, ekk03.salary, ekk03.title)
+	ekk03.User.tel = "15200003333"
+	fmt.Println(ekk03)
+
+	// 针对匿名嵌入结构体属性值访问和修改时间可省略结构体名称
+	fmt.Println(ekk03.name, ekk03.tel, ekk03.addr, ekk03.salary, ekk03.title)
+
+	ekk03.tel = "15200004444"
+	fmt.Println(ekk03)
+
+	// 使用执行名称初始化
+	ekk04 := Employee2{
+		User: User{
+			"kk",
+			"15200002222",
+			Address{
+				"陕西省西安市",
+				"锦业路",
+				"003",
+			},
+		},
+		salary: 25000,
+		title:  "安全架构师",
+		addr:   "陕西省西安市高新路001",
+	}
+
+	fmt.Printf("%#v\n", ekk04)
+
+	// 分别访问别嵌入和想入结构体的addr属性
+	fmt.Println(ekk04.addr)
+	fmt.Println(ekk04.User.addr)
+
+	// 分别修改被嵌入和嵌入结构体的addr属性
+	ekk04.addr = "陕西省西安市高新路002"
+	fmt.Println(ekk04.addr)
+	fmt.Println(ekk04.User.addr)
+
+	ekk04.User.addr.no = "004"
+	fmt.Println(ekk04.addr)
+	fmt.Println(ekk04.User.addr)
+
+	// 声明和初始化嵌入指针结构体对象
+	paddr := Address{"陕西省西安市", "锦业路", "001"}
+	puser := PUser{"kk", "15200000000", &paddr}
+
+	pemployee := PEmployee{
+		PUser:  &puser,
+		salary: 25000,
+		title:  "安全架构师",
+	}
+
+	fmt.Printf("%#v\n", pemployee)
+
+	//属性访问和修改
+	fmt.Println(paddr)      // no:001
+	fmt.Println(puser.addr) // no:001
+
+	puser.addr.no = "002"
+	fmt.Println(paddr)      // no:002
+	fmt.Println(puser.addr) // no:002
+
+	fmt.Println(puser.name)           // name: kk
+	fmt.Println(pemployee.PUser.name) // name: kk
+	fmt.Println(pemployee.name)       // name: kk
+
+	pemployee.name = "slience"
+
+	fmt.Println(puser.name)           // name: slience
+	fmt.Println(pemployee.PUser.name) // name: silence
+	fmt.Println(pemployee.name)       // name: slience
+
+	// 声明和初始化嵌入值结构体对象
+	vaddr := Address{"陕西省西安市", "锦业路", "001"}
+	vuser := User{"kk", "15200000000", vaddr}
+
+	vemployee := Employee{
+		User:   vuser,
+		salary: 25000,
+		title:  "安全架构师",
+	}
+
+	fmt.Printf("%#v\n", vemployee)
+	// 属性访问和修改
+	fmt.Println(vaddr)      // no:001
+	fmt.Println(vuser.addr) // no:001
+
+	vuser.addr.no = "002"
+	fmt.Println(vaddr)      // no:001
+	fmt.Println(vuser.addr) // no:002
+
+	fmt.Println(vuser.name)          //name: kk
+	fmt.Println(vemployee.User.name) // name: kk
+	fmt.Println(vemployee.name)      // name.kk
+
+	vemployee.name = "silence"
+
+	fmt.Println(vuser.name)          // name: kk
+	fmt.Println(vemployee.User.name) // name: slience
+	fmt.Println(vemployee.name)      // name:slience
+
+}
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+main.Employee: main.Employee{User:main.User{name:"", tel:"", addr:main.Address{region:"", street:"", no:""}}, salary:0, title:""}
+{{kk 152000022222 {陕西省西安市 锦业路 002}} 22000 安全开发工程师}
+{{kk 152000022222 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+kk 152000022222 {陕西省西安市 锦业路 003} 23000 架构工程师
+{{kk 15200003333 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+kk 15200003333 {陕西省西安市 锦业路 003} 23000 架构工程师
+{{kk 15200004444 {陕西省西安市 锦业路 003}} 23000 架构工程师}
+main.Employee2{User:main.User{name:"kk", tel:"15200002222", addr:main.Address{region:"陕西省西安市", street:"锦业 
+路", no:"003"}}, salary:25000, title:"安全架构师", addr:"陕西省西安市高新路001"}
+陕西省西安市高新路001
+{陕西省西安市 锦业路 003}
+陕西省西安市高新路002
+{陕西省西安市 锦业路 003}
+陕西省西安市高新路002
+{陕西省西安市 锦业路 004}
+main.PEmployee{PUser:(*main.PUser)(0xc00006e450), salary:25000, title:"安全架构师"}
+{陕西省西安市 锦业路 001}
+&{陕西省西安市 锦业路 001}
+{陕西省西安市 锦业路 002}
+&{陕西省西安市 锦业路 002}
+kk
+kk
+kk
+slience
+slience
+slience
+main.Employee{User:main.User{name:"kk", tel:"15200000000", addr:main.Address{region:"陕西省西安市", street:"锦业路
+", no:"001"}}, salary:25000, title:"安全架构师"}
+{陕西省西安市 锦业路 001}
+{陕西省西安市 锦业路 001}
+{陕西省西安市 锦业路 001}
+{陕西省西安市 锦业路 002}
+kk
+kk
+kk
+kk
+silence
+silence
+```
+
+使用属性为值类型，则在复制时发生拷贝，两者互不影响。
+
+## 可用性 
+
+结构体首字母大写则包外可见（公开的）， 否则进包内可以访问（内部的）
+结构体属性名首字母大写包外可见（公开的）， 否则仅包内可以访问（内部的）
+
+**组合：**
+- 结构体名首字母大写，属性名大写： 结构体可在包外使用，且访问其大写的属性名。
+- 结构体名首字母大写，属性名小写：结构体可在包外使用，且不能访问其小写的属性名。
+- 结构体名首字母小写，属性名小写：结构体只能在包内使用，属性访问在结构体嵌入式由被嵌入结构体（外层）决定，被嵌入结构体名首字母大写是属性名包外可见，否则只能在包内使用。
+- 结构体名首字母小写，属性名小写：结构体只能在包内使用
+
+# 方法 
+
+## 定义 
+
+方法是添加了接受者的函数，接受者必须是自定义的类型。
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+// func (t type) method(parameters)  returns {
+
+// }
+
+// 定义结构体Dog
+type Dog struct {
+	name string
+}
+
+// 为结构体Dog 定义方法Call
+func (dog Dog) Call() {
+	fmt.Printf("%s: 汪汪\n", dog.name)
+}
+
+// 为结构体Dog定义方法SetName
+func (dog Dog) SetName(name string) {
+	dog.name = name
+}
+
+// 为结构体Dog定义方法PSetName（接受者为Dog的指针对象）
+
+func (dog *Dog) PSetName(name string) {
+	dog.name = name
+}
+
+func main() {
+
+	// 初始化结构体对象
+	dog := Dog{"豆豆"}
+
+	// 调用结构体对象Call方法
+	dog.Call()
+
+	// 调用结构体对象SetName方法
+	dog.SetName("大黄")
+
+	dog.Call() // 这里结果是什么？？？ 为什么？？？ 怎么改？ 结果也是豆豆：汪汪
+
+	// 调用结构体指针对象的PSetName方法
+	(&dog).PSetName("大黄")
+	dog.Call()
+
+	dog2 := &Dog{"大毛"}
+	// 调用结构体对象的Call方法
+	(*&dog2).Call()
+
+	dog2.PSetName("二毛")
+
+}
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+豆豆: 汪汪
+豆豆: 汪汪
+大黄: 汪汪
+大毛: 汪汪
+```
+
+
+## 调用 
+调用方法通过自定义类型的对象。方法名进行调用，在调用过程中对象传递（赋值）给方法的接受者（值类型，拷贝）
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+// func (t type) method(parameters)  returns {
+
+// }
+
+// 定义结构体Dog
+type Dog struct {
+	name string
+}
+
+// 为结构体Dog 定义方法Call
+func (dog Dog) Call() {
+	fmt.Printf("%s: 汪汪\n", dog.name)
+}
+
+// 为结构体Dog定义方法SetName
+func (dog Dog) SetName(name string) {
+	dog.name = name
+}
+
+// 为结构体Dog定义方法PSetName（接受者为Dog的指针对象）
+
+func (dog *Dog) PSetName(name string) {
+	dog.name = name
+}
+
+func main() {
+
+	// 初始化结构体对象
+	dog := Dog{"豆豆"}
+
+	// 调用结构体对象Call方法
+	dog.Call()
+
+	// 调用结构体对象SetName方法
+	dog.SetName("大黄")
+
+	dog.Call() // 这里结果是什么？？？ 为什么？？？ 怎么改？ 结果也是豆豆：汪汪
+
+	// 调用结构体指针对象的PSetName方法
+	(&dog).PSetName("大黄")
+	dog.Call()
+
+	dog2 := &Dog{"大毛"}
+	// 调用结构体对象的Call方法
+	(*&dog2).Call()
+
+	dog2.PSetName("二毛")
+
+}
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+豆豆: 汪汪
+豆豆: 汪汪
+大黄: 汪汪
+大毛: 汪汪
+```
+
+
+## 指针接收者
+
+### 声明 
+```go
+
+package main
+
+import (
+	"fmt"
+)
+
+// func (t type) method(parameters)  returns {
+
+// }
+
+// 定义结构体Dog
+type Dog struct {
+	name string
+}
+
+// 为结构体Dog 定义方法Call
+func (dog Dog) Call() {
+	fmt.Printf("%s: 汪汪\n", dog.name)
+}
+
+// 为结构体Dog定义方法SetName
+func (dog Dog) SetName(name string) {
+	dog.name = name
+}
+
+// 为结构体Dog定义方法PSetName（接受者为Dog的指针对象）
+
+func (dog *Dog) PSetName(name string) {
+	dog.name = name
+}
+
+func main() {
+
+	// 初始化结构体对象
+	dog := Dog{"豆豆"}
+
+	// 调用结构体对象Call方法
+	dog.Call()
+
+	// 调用结构体对象SetName方法
+	dog.SetName("大黄")
+
+	dog.Call() // 这里结果是什么？？？ 为什么？？？ 怎么改？ 结果也是豆豆：汪汪
+
+	// 调用结构体指针对象的PSetName方法
+	(&dog).PSetName("大黄")
+	dog.Call()
+
+	dog2 := &Dog{"大毛"}
+	// 调用结构体对象的Call方法
+	(*&dog2).Call()
+
+	dog2.PSetName("二毛")
+
+}
+
+```
+
+
+
+当使用接受体指针对象调用值接收者的方法时，go 编译器会自动将指针对象 “解引用” 为值调用方法
+
+当使用结构体对象调用指针接收者的方法时，go 编译器会自动将值对象"取引用" 为指针调用方法。
+
+```go
+
+package main
+
+import (
+	"fmt"
+)
+
+// func (t type) method(parameters)  returns {
+
+// }
+
+// 定义结构体Dog
+type Dog struct {
+	name string
+}
+
+// 为结构体Dog 定义方法Call
+func (dog Dog) Call() {
+	fmt.Printf("%s: 汪汪\n", dog.name)
+}
+
+// 为结构体Dog定义方法SetName
+func (dog Dog) SetName(name string) {
+	dog.name = name
+}
+
+// 为结构体Dog定义方法PSetName（接受者为Dog的指针对象）
+
+func (dog *Dog) PSetName(name string) {
+	dog.name = name
+}
+
+func main() {
+
+	// 初始化结构体对象
+	dog := Dog{"豆豆"}
+
+	// 调用结构体对象Call方法
+	dog.Call()
+
+	// 调用结构体对象SetName方法
+	dog.SetName("大黄")
+
+	dog.Call() // 这里结果是什么？？？ 为什么？？？ 怎么改？ 结果也是豆豆：汪汪
+
+	// 调用结构体指针对象的PSetName方法
+	(&dog).PSetName("大黄")
+	dog.Call()
+
+	dog2 := &Dog{"大毛"}
+	// 调用结构体对象的Call方法
+	(*&dog2).Call()
+
+	dog2.PSetName("二毛")
+
+	// 调用结构体对象的Call方法
+	(*dog2).Call()
+
+	// 使用结构体对象调用指针接收者的PSetName 方法
+	dog.PSetName("小黄")
+
+	dog.Call()
+
+	dog2.PSetName("二毛")
+
+	// 使用结构体指针对象调用值接收者的Call方法
+
+	dog2.Call()
+
+	dog2.SetName("三毛")
+
+	dog2.Call() //？？？
+
+}
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+豆豆: 汪汪
+豆豆: 汪汪
+大黄: 汪汪
+大毛: 汪汪
+二毛: 汪汪
+小黄: 汪汪
+二毛: 汪汪
+二毛: 汪汪
+
+```
+
+注：取引用和解引用发生在接收者中，对于函数/方法的参数必须保持变量类型一一对应
+
+该值接收者还是指针接收者，取决于是否现需要修改原始结构体
+- 若不需要修改则使用值，若需要修改则使用指针
+- 若存在指针接受者，则所有方法使用指针接收者。
+
+对于接收者为指针类型的方法，需要注意在运行时若接收者为nil 则会发生报错。
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+// func (t type) method(parameters)  returns {
+
+// }
+
+// 定义结构体Dog
+type Dog struct {
+	name string
+}
+
+// 为结构体Dog 定义方法Call
+func (dog Dog) Call() {
+	fmt.Printf("%s: 汪汪\n", dog.name)
+}
+
+// 为结构体Dog定义方法SetName
+func (dog Dog) SetName(name string) {
+	dog.name = name
+}
+
+// 为结构体Dog定义方法PSetName（接受者为Dog的指针对象）
+
+func (dog *Dog) PSetName(name string) {
+	dog.name = name
+}
+
+func main() {
+
+	// 初始化结构体对象
+	dog := Dog{"豆豆"}
+
+	// 调用结构体对象Call方法
+	dog.Call()
+
+	// 调用结构体对象SetName方法
+	dog.SetName("大黄")
+
+	dog.Call() // 这里结果是什么？？？ 为什么？？？ 怎么改？ 结果也是豆豆：汪汪
+
+	// 调用结构体指针对象的PSetName方法
+	(&dog).PSetName("大黄")
+	dog.Call()
+
+	dog2 := &Dog{"大毛"}
+	// 调用结构体对象的Call方法
+	(*&dog2).Call()
+
+	dog2.PSetName("二毛")
+
+	// 调用结构体对象的Call方法
+	(*dog2).Call()
+
+	// 使用结构体对象调用指针接收者的PSetName 方法
+	dog.PSetName("小黄")
+
+	dog.Call()
+
+	dog2.PSetName("二毛")
+
+	// 使用结构体指针对象调用值接收者的Call方法
+
+	dog2.Call()
+
+	dog2.SetName("三毛")
+
+	dog2.Call() //？？？
+
+	var dog3 *Dog
+
+	dog3.Call()
+
+}
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+豆豆: 汪汪
+豆豆: 汪汪
+大黄: 汪汪
+大毛: 汪汪
+二毛: 汪汪
+小黄: 汪汪
+二毛: 汪汪
+二毛: 汪汪
+panic: runtime error: invalid memory address or nil pointer dereference
+[signal 0xc0000005 code=0x0 addr=0x8 pc=0x49c642]
+
+goroutine 1 [running]:
+main.main()
+        E:/go-phase-two/go-course/1test.go:75 +0x562
+exit status 2
+```
+
+
+## 匿名嵌入 
+
+若结构体匿名嵌入带有方法的结构体时，则在外部结构体可以调用嵌入结构体的方法，并且在调用时只有嵌入的字段会传递给嵌入结构体方法的接收者。
+
+当被嵌入结构体与嵌入结构体具有相同名称的方法时，则使用对象.方法名调用被嵌入结构体方法。若想要调用嵌入结构体方法，则使用对象.嵌入结构体名.方法.
+
+```go
+package main
+
+import "fmt"
+
+// 定义User结构体方法
+type User struct {
+	name string
+	addr string
+}
+
+func NewUser(name, tel string) *User {
+	return &User{name, tel}
+}
+
+func (user *User) SetName(name string) {
+	user.name = name
+}
+
+func (user *User) GetName() string {
+	return user.name
+}
+
+func (user *User) SetAddr(addr string) {
+	user.addr = addr
+}
+
+func (user *User) GetAddr() string {
+	return user.addr
+}
+
+// 定义Employee 结构体和方法
+type Employee struct {
+	*User
+	title  string
+	salary float64
+}
+
+func NewEmployee(name, addr, title string, salary float64) *Employee {
+	return &Employee{
+		NewUser(name, addr),
+		title,
+		salary,
+	}
+
+}
+
+func (employee *Employee) GetName() string {
+	return fmt.Sprintf("[%s]%s", employee.title, employee.name)
+
+}
+
+func (employee *Employee) SetTitle(title string) {
+	employee.title = title
+}
+
+func (employee *Employee) GetTitle() string {
+	return employee.title
+}
+
+func (employee *Employee) SetSalary(salary float64) {
+	employee.salary = salary
+}
+
+func (employee *Employee) GetSalary() float64 {
+	return employee.salary
+}
+
+func main() {
+	me := NewEmployee("kk", "北京朝阳区", "开发工程师", 15000)
+	fmt.Printf("%#v\n", me)
+
+	fmt.Println(me.GetName())      // 调用Employee.GetName
+	fmt.Println(me.User.GetName()) //调用User.GetName
+
+	me.SetAddr("西安市高新区")      // 调用User.SetAddr
+	fmt.Println(me.GetAddr()) // 调用User.GetAddr
+
+	me.SetSalary(13000)         // 调用Employee.Setsalary
+	fmt.Println(me.GetSalary()) // 调用Employee.GetSalary
+
+	fmt.Printf("%#v\n", me)
+
+}
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+&main.Employee{User:(*main.User)(0xc0000044a0), title:"开发工程师", salary:15000}
+[开发工程师]kk
+kk
+西安市高新区
+13000
+&main.Employee{User:(*main.User)(0xc0000044a0), title:"开发工程师", salary:13000}
+
+```
+
+## 方法值/方法表达式
+
+方法也可以赋值给变量，存储在数组、切片、映射中，也可作为参数传递给函数或作为函数返回值进行返回方法有两种，一种时使用对象/对象指针调用的(方法值)，另一种时有类型/类型指针调用的(方法表达式)
+
+### 1) 方法值
+
+```go
+package main
+
+import "fmt"
+
+// 定义结构体Dog
+type Dog struct {
+	name string
+}
+
+// 为结构体Dog 定义方法Call
+func (dog Dog) Call() {
+	fmt.Printf("%s: 汪汪\n", dog.name)
+}
+
+// 为结构体Dog定义方法SetName
+func (dog Dog) SetName(name string) {
+	dog.name = name
+}
+
+// 为结构体Dog定义方法PSetName（接受者为Dog的指针对象）
+
+func (dog *Dog) PSetName(name string) {
+	dog.name = name
+}
+
+// 定义User结构体方法
+type User struct {
+	name string
+	addr string
+}
+
+func NewUser(name, tel string) *User {
+	return &User{name, tel}
+}
+
+func (user *User) SetName(name string) {
+	user.name = name
+}
+
+func (user *User) GetName() string {
+	return user.name
+}
+
+func (user *User) SetAddr(addr string) {
+	user.addr = addr
+}
+
+func (user *User) GetAddr() string {
+	return user.addr
+}
+
+// 定义Employee 结构体和方法
+type Employee struct {
+	*User
+	title  string
+	salary float64
+}
+
+func NewEmployee(name, addr, title string, salary float64) *Employee {
+	return &Employee{
+		NewUser(name, addr),
+		title,
+		salary,
+	}
+
+}
+
+func (employee *Employee) GetName() string {
+	return fmt.Sprintf("[%s]%s", employee.title, employee.name)
+
+}
+
+func (employee *Employee) SetTitle(title string) {
+	employee.title = title
+}
+
+func (employee *Employee) GetTitle() string {
+	return employee.title
+}
+
+func (employee *Employee) SetSalary(salary float64) {
+	employee.salary = salary
+}
+
+func (employee *Employee) GetSalary() float64 {
+	return employee.salary
+}
+
+func main() {
+
+	dog := Dog{"豆豆"}
+
+	dog2 := &Dog{"大毛"}
+
+	// 方法值
+	methodv01 := dog.PSetName
+	methodv02 := dog.Call
+	methodv03 := dog2.PSetName
+	methodv04 := dog2.Call
+
+	fmt.Printf("%T, %T, %T, %T\n", methodv01, methodv02, methodv03, methodv04)
+
+	// 通过方法值调用方法
+	fmt.Printf("%p, %p\n", &dog, dog2)
+
+	methodv01("乐乐1")
+	methodv02() // ???
+
+	methodv03("乐乐2")
+	methodv04() // ???
+
+	fmt.Println(dog.name, dog2.name)
+}
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+func(string), func(), func(string), func()
+0xc0000461f0, 0xc000046200
+豆豆: 汪汪
+大毛: 汪汪
+乐乐1 乐乐2
+```
+在方法表达式赋值时若方法接收者为值类型，则在赋值时会将值类型拷贝（若调用为指针则自动解引用拷贝）
+
+```go
+package main
+
+import "fmt"
+
+// 定义结构体Dog
+type Dog struct {
+	name string
+}
+
+// 为结构体Dog 定义方法Call
+func (dog Dog) Call() {
+	fmt.Printf("%s: 汪汪\n", dog.name)
+}
+
+// 为结构体Dog定义方法SetName
+func (dog Dog) SetName(name string) {
+	dog.name = name
+}
+
+// 为结构体Dog定义方法PSetName（接收者为Dog的指针对象）
+
+func (dog *Dog) PSetName(name string) {
+	dog.name = name
+}
+
+func (dog *Dog) PCall() {
+	fmt.Printf("%s： 汪汪\n", dog.name)
+
+}
+
+// 定义User结构体方法
+type User struct {
+	name string
+	addr string
+}
+
+func NewUser(name, tel string) *User {
+	return &User{name, tel}
+}
+
+func (user *User) SetName(name string) {
+	user.name = name
+}
+
+func (user *User) GetName() string {
+	return user.name
+}
+
+func (user *User) SetAddr(addr string) {
+	user.addr = addr
+}
+
+func (user *User) GetAddr() string {
+	return user.addr
+}
+
+// 定义Employee 结构体和方法
+type Employee struct {
+	*User
+	title  string
+	salary float64
+}
+
+func NewEmployee(name, addr, title string, salary float64) *Employee {
+	return &Employee{
+		NewUser(name, addr),
+		title,
+		salary,
+	}
+
+}
+
+func (employee *Employee) GetName() string {
+	return fmt.Sprintf("[%s]%s", employee.title, employee.name)
+
+}
+
+func (employee *Employee) SetTitle(title string) {
+	employee.title = title
+}
+
+func (employee *Employee) GetTitle() string {
+	return employee.title
+}
+
+func (employee *Employee) SetSalary(salary float64) {
+	employee.salary = salary
+}
+
+func (employee *Employee) GetSalary() float64 {
+	return employee.salary
+}
+
+func main() {
+
+	dog := Dog{"豆豆"}
+
+	dog2 := &Dog{"大毛"}
+
+	// 方法值
+	methodv01 := dog.PSetName
+	methodv02 := dog.Call
+	methodv03 := dog2.PSetName
+	methodv04 := dog2.Call
+
+	fmt.Printf("%T, %T, %T, %T\n", methodv01, methodv02, methodv03, methodv04)
+
+	// 通过方法值调用方法
+	fmt.Printf("%p, %p\n", &dog, dog2)
+
+	methodv01("乐乐1")
+	methodv02() // ???
+
+	methodv03("乐乐2")
+	methodv04() // ???
+
+	fmt.Println(dog.name, dog2.name)
+
+	// 为结构体Dog定义方法PCall（接收者为Dog的指针对象）
+
+	methodv05 := dog.PCall(小明)
+	methodv06 := dog2.PCall(小红)
+
+	methodv05()
+	methodv06()
+}
+
+测试失败
+```
+
+### 方法表达式 
+
+```go
+package main
+
+import "fmt"
+
+// 定义结构体Dog
+type Dog struct {
+	name string
+}
+
+// 为结构体Dog 定义方法Call
+func (dog Dog) Call() {
+	fmt.Printf("%s: 汪汪\n", dog.name)
+}
+
+// 为结构体Dog定义方法SetName
+func (dog Dog) SetName(name string) {
+	dog.name = name
+}
+
+// 为结构体Dog定义方法PSetName（接收者为Dog的指针对象）
+
+func (dog *Dog) PSetName(name string) {
+	dog.name = name
+}
+
+func (dog *Dog) PCall() {
+	fmt.Printf("%s： 汪汪\n", dog.name)
+
+}
+
+// 定义User结构体方法
+type User struct {
+	name string
+	addr string
+}
+
+func NewUser(name, tel string) *User {
+	return &User{name, tel}
+}
+
+func (user *User) SetName(name string) {
+	user.name = name
+}
+
+func (user *User) GetName() string {
+	return user.name
+}
+
+func (user *User) SetAddr(addr string) {
+	user.addr = addr
+}
+
+func (user *User) GetAddr() string {
+	return user.addr
+}
+
+// 定义Employee 结构体和方法
+type Employee struct {
+	*User
+	title  string
+	salary float64
+}
+
+func NewEmployee(name, addr, title string, salary float64) *Employee {
+	return &Employee{
+		NewUser(name, addr),
+		title,
+		salary,
+	}
+
+}
+
+func (employee *Employee) GetName() string {
+	return fmt.Sprintf("[%s]%s", employee.title, employee.name)
+
+}
+
+func (employee *Employee) SetTitle(title string) {
+	employee.title = title
+}
+
+func (employee *Employee) GetTitle() string {
+	return employee.title
+}
+
+func (employee *Employee) SetSalary(salary float64) {
+	employee.salary = salary
+}
+
+func (employee *Employee) GetSalary() float64 {
+	return employee.salary
+}
+
+func main() {
+
+	dog := Dog{"豆豆"}
+
+	dog2 := &Dog{"大毛"}
+
+	// 方法值
+	methodv01 := dog.PSetName
+	methodv02 := dog.Call
+	methodv03 := dog2.PSetName
+	methodv04 := dog2.Call
+
+	fmt.Printf("%T, %T, %T, %T\n", methodv01, methodv02, methodv03, methodv04)
+
+	// 通过方法值调用方法
+	fmt.Printf("%p, %p\n", &dog, dog2)
+
+	methodv01("乐乐1")
+	methodv02() // ???
+
+	methodv03("乐乐2")
+	methodv04() // ???
+
+	fmt.Println(dog.name, dog2.name)
+
+	// // 为结构体Dog定义方法PCall（接收者为Dog的指针对象）
+
+	// methodv05 := dog.PCall(小明)
+	// methodv06 := dog2.PCall(小红)
+
+	// methodv05()
+	// methodv06()
+
+	// 方式表达式
+	methode01 := (*Dog).PSetName
+	methode02 := Dog.Call
+
+	fmt.Printf("%T, %T\n", methode01, methode02)
+
+	// 通过方法表达式指定对象调用方法
+	methode01(&dog, "贝贝1") // (*Dog).PSetName(&dog, "贝贝1")
+	methode01(dog2, "贝贝2") // (*Dog).PSetName(dog2, "贝贝2")
+
+	methode02(dog)   //Dog.Call(dog)
+	methode02(*dog2) //Dog.Call(*dog2)
+
+	// 取引用
+	// methode03 := Dog.PSetName
+	methode04 := (*Dog).Call
+
+	fmt.Printf("%T\n", methode04)
+
+	methode04(&dog)
+	methode04(dog2)
+}
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+func(string), func(), func(string), func()
+0xc0000461f0, 0xc000046200
+豆豆: 汪汪
+大毛: 汪汪
+乐乐1 乐乐2
+func(*main.Dog, string), func(main.Dog)
+贝贝1: 汪汪
+贝贝2: 汪汪
+func(*main.Dog)
+贝贝1: 汪汪
+贝贝2: 汪汪
+```
+
+
+方法表达式在赋值时，针对接收者为值类型的方法使用类型名或类型指针访问（go 自动为指针变量生成隐式的指针类型接收者方法），针对接收者为指针类型则使用类型指针访问。
+
+同时在调用时需要传递对应的值对象或指针对象
+
+### 自动生成指针接收者方法 
