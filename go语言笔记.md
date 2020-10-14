@@ -7214,3 +7214,1837 @@ func(*main.Dog)
 同时在调用时需要传递对应的值对象或指针对象
 
 ### 自动生成指针接收者方法 
+
+为什么根据接收者为值类型生成对应指针类型接收者方法，而不根据接收者为指针类型生成对应值接收者方法
+
+```go
+package main
+
+import (
+	"fmt"	"go/types"
+)
+
+
+
+type User struct {
+	id int 
+	name string
+}
+
+func (user User) SetId(id int) {
+	user.id
+}
+
+func (user User) GetId() int {
+	return user.id
+}
+
+/** 
+// 隐式
+func (user *User) SetId(id int) {
+	// 获取user地址的值，并拷贝调用SetId, 只影响拷贝(*user)的值，并不影响调用者的值
+	// 与(user User)SetId(id int) 行为一致
+	(*user).SetId(id)
+}
+
+func (user *User) GetId() int {
+	return (*user).GetId()
+}
+
+// 使用值和指针都不改变调用者，行为一致
+*/
+
+func (user *User) SetName(name string)  {
+	user.name = name 
+}
+
+func (user *User) GetName() string {
+	return user.name	
+}
+
+/**
+
+func (user User) SetName(name string) {
+	// user为值接收者，拷贝，在调用（&user），SetName只会影响接收者（user）的值，并不会影响调用者的值
+	// 与(user *User)SetName(name string) 行为不一样
+	(&user).SetName(name)
+}
+
+func (user User) GetName(name string) {
+	return (&user).GetName()
+}
+
+// 使用指针改变接收者，使用值不改变调用者，行为不一致
+
+*/
+
+
+
+
+func main() {
+
+	type User struct {
+		Fields(2):
+			id  int,
+			name string,
+		Methods(2):
+			func GetId(objs.User) (int) {},
+			func SetId(objs.User, int) {},
+	}
+
+	*{
+		type User struct {
+			Fields(2):
+				id int,
+				name string,
+			Methods(2):
+				func GetId(objs.User) (int) {},
+				func SetId(objs.User, int) {},
+		}
+		Methods(4):
+			func GetId(*objs.User) (int) {},
+			func GetName(*objs.User) (string) {},
+			func SetName(*objs.User, int) {},
+			func SetName(*objs.user, string) {} 
+	}
+	
+}
+
+测试失败
+```
+使用反射获取User对象和*User对象结构
+
+
+# 接口 
+
+接口是自定义类型，是对其他类型行为的抽象
+
+## 定义 
+
+接口定义使用interface 表示，声明了一系列的函数签名（函数名、函数参数、函数返回值），在定义接口可以指定接口名称，在后续声明接口变量时使用。
+
+## 声明 
+声明接口变量只需要定义变量类型为接口名，此时变量被初始化为nil 
+
+```go
+package main
+
+import "fmt"
+
+// 定义Sender接口
+type Sender interface {
+	Send(to, msg string) error
+	SendAll(tos []string, msg string) error
+}
+
+func main() {
+
+	var sender Sender
+	fmt.Printf("%T: %v", sender, sender)
+}
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+<nil>: <nil>
+```
+
+## 赋值 
+### 类型对象 
+
+当自定义类型实现了接口类型中声明的所有函数时，则该类型的对象可以赋值给接口变量，并使用接口变量调用实现的接口。
+
+1. 方法接收者为值类型的方法 
+
+```go
+package main
+
+import "fmt"
+
+// 定义Sender接口
+type Sender interface {
+	Send(to, msg string) error
+	SendAll(tos []string, msg string) error
+}
+
+// 定义EmailSender结构体
+type EmailSender struct {
+	addr           string
+	port           int
+	user, password string
+}
+
+func NewEmailSender(addr string, port int, user, password string) EmailSender {
+	return EmailSender{addr, port, user, password}
+}
+
+// 接收者为值对象
+func (sender EmailSender) Send(to, msg string) error {
+	fmt.Printf("发送邮件给：%s， 内容： %s\n", to, msg)
+	return nil
+}
+
+// 接收者为值对象
+func (sender EmailSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送邮件给%s, 内容： %s\n", to, msg)
+	}
+	return nil
+}
+
+func main() {
+
+	var sender Sender
+	fmt.Printf("%T: %v", sender, sender)
+
+	// 赋值sender对象为NewEmailSender值对象
+	var sender01 Sender = EmailSender{"smtp.qq.com", 465, "kk", "123456"}
+	fmt.Printf("%T：%v\n", sender01, sender01)
+	sender01.Send("imsilence@outlook.com", "Hi Silence")
+	sender01.SendAll([]string{"imsilence@outlook.com", "iamkk@outlook.com"}, "早上好")
+}
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+<nil>: <nil>main.EmailSender：{smtp.qq.com 465 kk 123456}
+发送邮件给：imsilence@outlook.com， 内容： Hi Silence
+发送邮件给imsilence@outlook.com, 内容： 早上好
+发送邮件给iamkk@outlook.com, 内容： 早上好
+```
+
+
+2. 方法接收者全为指针类型的
+
+```go
+package main
+
+import "fmt"
+
+// 定义Sender接口
+type Sender interface {
+	Send(to, msg string) error
+	SendAll(tos []string, msg string) error
+}
+
+// 定义EmailSender结构体
+type EmailSender struct {
+	addr           string
+	port           int
+	user, password string
+}
+
+func NewEmailSender(addr string, port int, user, password string) EmailSender {
+	return EmailSender{addr, port, user, password}
+}
+
+// 接收者为值对象
+func (sender EmailSender) Send(to, msg string) error {
+	fmt.Printf("发送邮件给：%s， 内容： %s\n", to, msg)
+	return nil
+}
+
+// 接收者为值对象
+func (sender EmailSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送邮件给%s, 内容： %s\n", to, msg)
+	}
+	return nil
+}
+
+type SMSSender struct {
+	url, key string
+}
+
+func NewSMSSender(url, key string) *SMSSender {
+	return &SMSSender{url, key}
+
+}
+
+// 接收者为指针对象
+func (sender *SMSSender) Send(to, msg string) error {
+
+	fmt.Printf("发送短信给： %s, 内容：%s\n", to, msg)
+	return nil
+}
+
+// 接收者为指针对象
+func (sender *SMSSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送短信给： %s, 内容：%s\n", to, msg)
+	}
+	return nil
+}
+
+func main() {
+
+	var sender Sender
+	fmt.Printf("%T: %v", sender, sender)
+
+	// 赋值sender对象为NewEmailSender值对象
+	var sender01 Sender = EmailSender{"smtp.qq.com", 465, "kk", "123456"}
+	fmt.Printf("%T：%v\n", sender01, sender01)
+	sender01.Send("imsilence@outlook.com", "Hi Silence")
+	sender01.SendAll([]string{"imsilence@outlook.com", "iamkk@outlook.com"}, "早上好")
+
+	// 赋值sender 对象为NewSMSSender指针对象
+	var sender02 Sender = &SMSSender{"http://v.juhe.cn/sms/send", "123"}
+	fmt.Printf("%T: %v\n", sender02, sender02)
+	sender02.Send("15200000000", "Hi KK")
+	sender02.SendAll([]string{"15200000000", "15800000000"}, "早上好")
+}
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+<nil>: <nil>main.EmailSender：{smtp.qq.com 465 kk 123456}
+发送邮件给：imsilence@outlook.com， 内容： Hi Silence
+发送邮件给imsilence@outlook.com, 内容： 早上好
+发送邮件给iamkk@outlook.com, 内容： 早上好
+*main.SMSSender: &{http://v.juhe.cn/sms/send 123}
+发送短信给： 15200000000, 内容：Hi KK
+发送短信给： 15200000000, 内容：早上好
+发送短信给： 15800000000, 内容：早上好
+```
+
+
+3. 方法接收者既有值类型又有指针类型的
+
+```go
+package main
+
+import "fmt"
+
+// 定义Sender接口
+type Sender interface {
+	Send(to, msg string) error
+	SendAll(tos []string, msg string) error
+}
+
+// 定义EmailSender结构体
+type EmailSender struct {
+	addr           string
+	port           int
+	user, password string
+}
+
+func NewEmailSender(addr string, port int, user, password string) EmailSender {
+	return EmailSender{addr, port, user, password}
+}
+
+// 接收者为值对象
+func (sender EmailSender) Send(to, msg string) error {
+	fmt.Printf("发送邮件给：%s， 内容： %s\n", to, msg)
+	return nil
+}
+
+// 接收者为值对象
+func (sender EmailSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送邮件给%s, 内容： %s\n", to, msg)
+	}
+	return nil
+}
+
+type SMSSender struct {
+	url, key string
+}
+
+func NewSMSSender(url, key string) *SMSSender {
+	return &SMSSender{url, key}
+
+}
+
+// 接收者为指针对象
+func (sender *SMSSender) Send(to, msg string) error {
+
+	fmt.Printf("发送短信给： %s, 内容：%s\n", to, msg)
+	return nil
+}
+
+// 接收者为指针对象
+func (sender *SMSSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送短信给： %s, 内容：%s\n", to, msg)
+	}
+	return nil
+}
+
+// 定义WeChatSender 结构体
+type WeChatSender struct {
+	sessionFile string
+}
+
+func NewWeChatSender(sessionFile string) *WeChatSender {
+	return &WeChatSender{sessionFile}
+}
+
+// 接收者为值对象
+func (sender WeChatSender) Send(to, msg string) error {
+	fmt.Printf("发送短信给：%s, 内容：%s\n", to, msg)
+	return nil
+}
+
+// 接收者为指针对象
+func (sender *WeChatSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送微信给：%s, 内容：%s\n", to, msg)
+	}
+	return nil
+}
+
+func main() {
+
+	var sender Sender
+	fmt.Printf("%T: %v", sender, sender)
+
+	// 赋值sender对象为NewEmailSender值对象
+	var sender01 Sender = EmailSender{"smtp.qq.com", 465, "kk", "123456"}
+	fmt.Printf("%T：%v\n", sender01, sender01)
+	sender01.Send("imsilence@outlook.com", "Hi Silence")
+	sender01.SendAll([]string{"imsilence@outlook.com", "iamkk@outlook.com"}, "早上好")
+
+	// 赋值sender 对象为NewSMSSender指针对象
+	var sender02 Sender = &SMSSender{"http://v.juhe.cn/sms/send", "123"}
+	fmt.Printf("%T: %v\n", sender02, sender02)
+	sender02.Send("15200000000", "Hi KK")
+	sender02.SendAll([]string{"15200000000", "15800000000"}, "早上好")
+
+	// 赋值应该使用哪一个？原因？
+	// var sender03 Sender = WeChatSender{"/tmp/wx.session"} // ？？？
+	// var sender03 Sender = &WeChatSender{"/tmp/wx.session"} // ？？？
+	var sender03 Sender = &WeChatSender{"/tmp.session"}
+	fmt.Printf("%T: %v\n", sender03, sender03)
+	sender03.Send("7867258956", "Hi kk")
+	sender03.SendAll([]string{"785736895", "785632342"}, "早上好")
+
+	// 问题？
+	// var sender04 Sender = &EmailSender{"smtp.qq.com", 465, "kk", "123456"} // ???
+	// var sender05 Sender = SMSSender{"http://v.juhe.cn/sms/send", "1234"} // ???
+}
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+<nil>: <nil>main.EmailSender：{smtp.qq.com 465 kk 123456}
+发送邮件给：imsilence@outlook.com， 内容： Hi Silence
+发送邮件给imsilence@outlook.com, 内容： 早上好
+发送邮件给iamkk@outlook.com, 内容： 早上好
+*main.SMSSender: &{http://v.juhe.cn/sms/send 123}
+发送短信给： 15200000000, 内容：Hi KK
+发送短信给： 15200000000, 内容：早上好
+发送短信给： 15800000000, 内容：早上好
+*main.WeChatSender: &{/tmp.session}
+发送短信给：7867258956, 内容：Hi kk
+发送微信给：785736895, 内容：早上好
+发送微信给：785632342, 内容：早上好
+
+```
+
+
+### 接口对象 
+
+当接口(A)包含另外一个接口(B)中声明的所有函数时(A 接口函数时B 接口函数的父集， B时A的子集)，则接口(A)的对象也可以赋值给子集的接口(B)变量 
+
+```go
+package main
+
+import "fmt"
+
+// 定义Sender接口
+type Sender interface {
+	Send(to, msg string) error
+	SendAll(tos []string, msg string) error
+}
+
+// 定义EmailSender结构体
+type EmailSender struct {
+	addr           string
+	port           int
+	user, password string
+}
+
+func NewEmailSender(addr string, port int, user, password string) EmailSender {
+	return EmailSender{addr, port, user, password}
+}
+
+// 接收者为值对象
+func (sender EmailSender) Send(to, msg string) error {
+	fmt.Printf("发送邮件给：%s， 内容： %s\n", to, msg)
+	return nil
+}
+
+// 接收者为值对象
+func (sender EmailSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送邮件给%s, 内容： %s\n", to, msg)
+	}
+	return nil
+}
+
+type SMSSender struct {
+	url, key string
+}
+
+func NewSMSSender(url, key string) *SMSSender {
+	return &SMSSender{url, key}
+
+}
+
+// 接收者为指针对象
+func (sender *SMSSender) Send(to, msg string) error {
+
+	fmt.Printf("发送短信给： %s, 内容：%s\n", to, msg)
+	return nil
+}
+
+// 接收者为指针对象
+func (sender *SMSSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送短信给： %s, 内容：%s\n", to, msg)
+	}
+	return nil
+}
+
+// 定义WeChatSender 结构体
+type WeChatSender struct {
+	sessionFile string
+}
+
+func NewWeChatSender(sessionFile string) *WeChatSender {
+	return &WeChatSender{sessionFile}
+}
+
+// 接收者为值对象
+func (sender WeChatSender) Send(to, msg string) error {
+	fmt.Printf("发送短信给：%s, 内容：%s\n", to, msg)
+	return nil
+}
+
+// 接收者为指针对象
+func (sender *WeChatSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送微信给：%s, 内容：%s\n", to, msg)
+	}
+	return nil
+}
+
+type SingleSender interface {
+	Send(to, mgs string) error
+}
+
+func main() {
+
+	var sender Sender
+	fmt.Printf("%T: %v", sender, sender)
+
+	// 赋值sender对象为NewEmailSender值对象
+	var sender01 Sender = EmailSender{"smtp.qq.com", 465, "kk", "123456"}
+	fmt.Printf("%T：%v\n", sender01, sender01)
+	sender01.Send("imsilence@outlook.com", "Hi Silence")
+	sender01.SendAll([]string{"imsilence@outlook.com", "iamkk@outlook.com"}, "早上好")
+
+	// 赋值sender 对象为NewSMSSender指针对象
+	var sender02 Sender = &SMSSender{"http://v.juhe.cn/sms/send", "123"}
+	fmt.Printf("%T: %v\n", sender02, sender02)
+	sender02.Send("15200000000", "Hi KK")
+	sender02.SendAll([]string{"15200000000", "15800000000"}, "早上好")
+
+	// 赋值应该使用哪一个？原因？
+	// var sender03 Sender = WeChatSender{"/tmp/wx.session"} // ？？？
+	// var sender03 Sender = &WeChatSender{"/tmp/wx.session"} // ？？？
+	var sender03 Sender = &WeChatSender{"/tmp.session"}
+	fmt.Printf("%T: %v\n", sender03, sender03)
+	sender03.Send("7867258956", "Hi kk")
+	sender03.SendAll([]string{"785736895", "785632342"}, "早上好")
+
+	// 问题？
+	// var sender04 Sender = &EmailSender{"smtp.qq.com", 465, "kk", "123456"} // ???
+	// var sender05 Sender = SMSSender{"http://v.juhe.cn/sms/send", "1234"} // ???
+
+	var ssender SingleSender = sender03
+	ssender.Send("78523423423", "Hi KK")
+
+}
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+<nil>: <nil>main.EmailSender：{smtp.qq.com 465 kk 123456}
+发送邮件给：imsilence@outlook.com， 内容： Hi Silence
+发送邮件给imsilence@outlook.com, 内容： 早上好
+发送邮件给iamkk@outlook.com, 内容： 早上好
+*main.SMSSender: &{http://v.juhe.cn/sms/send 123}
+发送短信给： 15200000000, 内容：Hi KK
+发送短信给： 15200000000, 内容：早上好
+发送短信给： 15800000000, 内容：早上好
+*main.WeChatSender: &{/tmp.session}
+发送短信给：7867258956, 内容：Hi kk
+发送微信给：785736895, 内容：早上好
+发送微信给：785632342, 内容：早上好
+发送短信给：78523423423, 内容：Hi KK
+```
+
+若两个接口声明同样的函数签名，则两个接口完全等价
+
+当类型与父集接口赋值给接口变量口，只能调用变量定义接口中声明的函数(方法)
+
+
+## 类型断言&查询
+
+当父集接口或者类型对象赋值给接口变量后，需要将接口变量重新转为原来的类型，需要使用类型断言/查询
+
+### 断言
+
+语法：接口变量(Type)
+
+```go
+package main
+
+import "fmt"
+
+// 定义Sender接口
+type Sender interface {
+	Send(to, msg string) error
+	SendAll(tos []string, msg string) error
+}
+
+// 定义EmailSender结构体
+type EmailSender struct {
+	addr           string
+	port           int
+	user, password string
+}
+
+func NewEmailSender(addr string, port int, user, password string) EmailSender {
+	return EmailSender{addr, port, user, password}
+}
+
+// 接收者为值对象
+func (sender EmailSender) Send(to, msg string) error {
+	fmt.Printf("发送邮件给：%s， 内容： %s\n", to, msg)
+	return nil
+}
+
+// 接收者为值对象
+func (sender EmailSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送邮件给%s, 内容： %s\n", to, msg)
+	}
+	return nil
+}
+
+type SMSSender struct {
+	url, key string
+}
+
+func NewSMSSender(url, key string) *SMSSender {
+	return &SMSSender{url, key}
+
+}
+
+// 接收者为指针对象
+func (sender *SMSSender) Send(to, msg string) error {
+
+	fmt.Printf("发送短信给： %s, 内容：%s\n", to, msg)
+	return nil
+}
+
+// 接收者为指针对象
+func (sender *SMSSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送短信给： %s, 内容：%s\n", to, msg)
+	}
+	return nil
+}
+
+// 定义WeChatSender 结构体
+type WeChatSender struct {
+	sessionFile string
+}
+
+func NewWeChatSender(sessionFile string) *WeChatSender {
+	return &WeChatSender{sessionFile}
+}
+
+// 接收者为值对象
+func (sender WeChatSender) Send(to, msg string) error {
+	fmt.Printf("发送短信给：%s, 内容：%s\n", to, msg)
+	return nil
+}
+
+// 接收者为指针对象
+func (sender *WeChatSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送微信给：%s, 内容：%s\n", to, msg)
+	}
+	return nil
+}
+
+type SingleSender interface {
+	Send(to, mgs string) error
+}
+
+func main() {
+
+	var sender Sender
+	fmt.Printf("%T: %v", sender, sender)
+
+	// 赋值sender对象为NewEmailSender值对象
+	var sender01 Sender = EmailSender{"smtp.qq.com", 465, "kk", "123456"}
+	fmt.Printf("%T：%v\n", sender01, sender01)
+	sender01.Send("imsilence@outlook.com", "Hi Silence")
+	sender01.SendAll([]string{"imsilence@outlook.com", "iamkk@outlook.com"}, "早上好")
+
+	// 赋值sender 对象为NewSMSSender指针对象
+	var sender02 Sender = &SMSSender{"http://v.juhe.cn/sms/send", "123"}
+	fmt.Printf("%T: %v\n", sender02, sender02)
+	sender02.Send("15200000000", "Hi KK")
+	sender02.SendAll([]string{"15200000000", "15800000000"}, "早上好")
+
+	// 赋值应该使用哪一个？原因？
+	// var sender03 Sender = WeChatSender{"/tmp/wx.session"} // ？？？
+	// var sender03 Sender = &WeChatSender{"/tmp/wx.session"} // ？？？
+	var sender03 Sender = &WeChatSender{"/tmp.session"}
+	fmt.Printf("%T: %v\n", sender03, sender03)
+	sender03.Send("7867258956", "Hi kk")
+	sender03.SendAll([]string{"785736895", "785632342"}, "早上好")
+
+	// 问题？
+	// var sender04 Sender = &EmailSender{"smtp.qq.com", 465, "kk", "123456"} // ???
+	// var sender05 Sender = SMSSender{"http://v.juhe.cn/sms/send", "1234"} // ???
+
+	var ssender SingleSender = sender03
+	ssender.Send("78523423423", "Hi KK")
+
+	// 使用类型断言进行转换
+	sender04, ok := ssender.(Sender)
+	fmt.Printf("%T, %#v, %v\n", sender04, sender04, ok)
+	sender03.SendAll([]string{"78234235234", "234234235"}, "早上好")
+
+	emailSender, ok := sender01.(EmailSender)
+	fmt.Printf("%T, %#v, $v\n", emailSender, emailSender, ok)
+	if ok {
+		fmt.Println(emailSender.addr)
+	}
+
+	if smsSender, ok := sender02.(*SMSSender); ok {
+		fmt.Printf("%T, %#v, %v\n", smsSender, smsSender, ok)
+		fmt.Println(smsSender.url)
+	}
+
+	if smsSender02, ok := sender03.(*SMSSender); !ok {
+		fmt.Printf("%T, %v, %v\n", smsSender02, smsSender02, ok)
+	}
+}
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+<nil>: <nil>main.EmailSender：{smtp.qq.com 465 kk 123456}
+发送邮件给：imsilence@outlook.com， 内容： Hi Silence
+发送邮件给imsilence@outlook.com, 内容： 早上好
+发送邮件给iamkk@outlook.com, 内容： 早上好
+*main.SMSSender: &{http://v.juhe.cn/sms/send 123}
+发送短信给： 15200000000, 内容：Hi KK
+发送短信给： 15200000000, 内容：早上好
+发送短信给： 15800000000, 内容：早上好
+*main.WeChatSender: &{/tmp.session}
+发送短信给：7867258956, 内容：Hi kk
+发送微信给：785736895, 内容：早上好
+发送微信给：785632342, 内容：早上好
+发送短信给：78523423423, 内容：Hi KK
+*main.WeChatSender, &main.WeChatSender{sessionFile:"/tmp.session"}, true
+发送微信给：78234235234, 内容：早上好
+发送微信给：234234235, 内容：早上好
+main.EmailSender, main.EmailSender{addr:"smtp.qq.com", port:465, user:"kk", password:"123456"}, $v
+%!(EXTRA bool=true)smtp.qq.com
+*main.SMSSender, &main.SMSSender{url:"http://v.juhe.cn/sms/send", key:"123"}, true
+http://v.juhe.cn/sms/send
+*main.SMSSender, <nil>, false
+
+```
+
+### 查询
+
+可以通过switch-case+接口变量.(type查询变量类型,并选择对应的分支块)
+
+```go
+package main
+
+import "fmt"
+
+// 定义Sender接口
+type Sender interface {
+	Send(to, msg string) error
+	SendAll(tos []string, msg string) error
+}
+
+// 定义EmailSender结构体
+type EmailSender struct {
+	addr           string
+	port           int
+	user, password string
+}
+
+func NewEmailSender(addr string, port int, user, password string) EmailSender {
+	return EmailSender{addr, port, user, password}
+}
+
+// 接收者为值对象
+func (sender EmailSender) Send(to, msg string) error {
+	fmt.Printf("发送邮件给：%s， 内容： %s\n", to, msg)
+	return nil
+}
+
+// 接收者为值对象
+func (sender EmailSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送邮件给%s, 内容： %s\n", to, msg)
+	}
+	return nil
+}
+
+type SMSSender struct {
+	url, key string
+}
+
+func NewSMSSender(url, key string) *SMSSender {
+	return &SMSSender{url, key}
+
+}
+
+// 接收者为指针对象
+func (sender *SMSSender) Send(to, msg string) error {
+
+	fmt.Printf("发送短信给： %s, 内容：%s\n", to, msg)
+	return nil
+}
+
+// 接收者为指针对象
+func (sender *SMSSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送短信给： %s, 内容：%s\n", to, msg)
+	}
+	return nil
+}
+
+// 定义WeChatSender 结构体
+type WeChatSender struct {
+	sessionFile string
+}
+
+func NewWeChatSender(sessionFile string) *WeChatSender {
+	return &WeChatSender{sessionFile}
+}
+
+// 接收者为值对象
+func (sender WeChatSender) Send(to, msg string) error {
+	fmt.Printf("发送短信给：%s, 内容：%s\n", to, msg)
+	return nil
+}
+
+// 接收者为指针对象
+func (sender *WeChatSender) SendAll(tos []string, msg string) error {
+	for _, to := range tos {
+		fmt.Printf("发送微信给：%s, 内容：%s\n", to, msg)
+	}
+	return nil
+}
+
+type SingleSender interface {
+	Send(to, mgs string) error
+}
+
+func main() {
+
+	var sender Sender
+	fmt.Printf("%T: %v", sender, sender)
+
+	// 赋值sender对象为NewEmailSender值对象
+	var sender01 Sender = EmailSender{"smtp.qq.com", 465, "kk", "123456"}
+	fmt.Printf("%T：%v\n", sender01, sender01)
+	sender01.Send("imsilence@outlook.com", "Hi Silence")
+	sender01.SendAll([]string{"imsilence@outlook.com", "iamkk@outlook.com"}, "早上好")
+
+	// 赋值sender 对象为NewSMSSender指针对象
+	var sender02 Sender = &SMSSender{"http://v.juhe.cn/sms/send", "123"}
+	fmt.Printf("%T: %v\n", sender02, sender02)
+	sender02.Send("15200000000", "Hi KK")
+	sender02.SendAll([]string{"15200000000", "15800000000"}, "早上好")
+
+	// 赋值应该使用哪一个？原因？
+	// var sender03 Sender = WeChatSender{"/tmp/wx.session"} // ？？？
+	// var sender03 Sender = &WeChatSender{"/tmp/wx.session"} // ？？？
+	var sender03 Sender = &WeChatSender{"/tmp.session"}
+	fmt.Printf("%T: %v\n", sender03, sender03)
+	sender03.Send("7867258956", "Hi kk")
+	sender03.SendAll([]string{"785736895", "785632342"}, "早上好")
+
+	// 问题？
+	// var sender04 Sender = &EmailSender{"smtp.qq.com", 465, "kk", "123456"} // ???
+	// var sender05 Sender = SMSSender{"http://v.juhe.cn/sms/send", "1234"} // ???
+
+	var ssender SingleSender = sender03
+	ssender.Send("78523423423", "Hi KK")
+
+	// 使用类型断言进行转换
+	sender04, ok := ssender.(Sender)
+	fmt.Printf("%T, %#v, %v\n", sender04, sender04, ok)
+	sender03.SendAll([]string{"78234235234", "234234235"}, "早上好")
+
+	emailSender, ok := sender01.(EmailSender)
+	fmt.Printf("%T, %#v, $v\n", emailSender, emailSender, ok)
+	if ok {
+		fmt.Println(emailSender.addr)
+	}
+
+	if smsSender, ok := sender02.(*SMSSender); ok {
+		fmt.Printf("%T, %#v, %v\n", smsSender, smsSender, ok)
+		fmt.Println(smsSender.url)
+	}
+
+	if smsSender02, ok := sender03.(*SMSSender); !ok {
+		fmt.Printf("%T, %v, %v\n", smsSender02, smsSender02, ok)
+	}
+
+	// 使用类型查询
+	senders := []SingleSender{sender, ssender, sender01, sender02, sender03, sender04}
+	for _, s := range senders {
+		switch v := s.(type) {
+		case EmailSender:
+			fmt.Printf("EmailSender: %#v, %v\n", v, v.addr)
+		case *SMSSender:
+			fmt.Printf("SMSSender: %#v, %v\n", v, v.url)
+		// case *WeChatSender
+		// fmt.Printf("WeChatSender: %#v, %v\n", v, v.sessionFile)
+		case Sender:
+			fmt.Printf("Sender: %#v, %v\n", v, v)
+			v.SendAll([]string{"one", "two"}, "sender")
+		default:
+			fmt.Printf("error, %#v\n", v)
+		}
+	}
+}
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+<nil>: <nil>main.EmailSender：{smtp.qq.com 465 kk 123456}
+发送邮件给：imsilence@outlook.com， 内容： Hi Silence
+发送邮件给imsilence@outlook.com, 内容： 早上好
+发送邮件给iamkk@outlook.com, 内容： 早上好
+*main.SMSSender: &{http://v.juhe.cn/sms/send 123}
+发送短信给： 15200000000, 内容：Hi KK
+发送短信给： 15200000000, 内容：早上好
+发送短信给： 15800000000, 内容：早上好
+*main.WeChatSender: &{/tmp.session}
+发送短信给：7867258956, 内容：Hi kk
+发送微信给：785736895, 内容：早上好
+发送微信给：785632342, 内容：早上好
+发送短信给：78523423423, 内容：Hi KK
+*main.WeChatSender, &main.WeChatSender{sessionFile:"/tmp.session"}, true
+发送微信给：78234235234, 内容：早上好
+发送微信给：234234235, 内容：早上好
+main.EmailSender, main.EmailSender{addr:"smtp.qq.com", port:465, user:"kk", password:"123456"}, $v
+%!(EXTRA bool=true)smtp.qq.com
+*main.SMSSender, &main.SMSSender{url:"http://v.juhe.cn/sms/send", key:"123"}, true
+http://v.juhe.cn/sms/send
+*main.SMSSender, <nil>, false
+error, <nil>
+Sender: &main.WeChatSender{sessionFile:"/tmp.session"}, &{/tmp.session}
+发送微信给：one, 内容：sender
+发送微信给：two, 内容：sender
+EmailSender: main.EmailSender{addr:"smtp.qq.com", port:465, user:"kk", password:"123456"}, smtp.qq.com
+SMSSender: &main.SMSSender{url:"http://v.juhe.cn/sms/send", key:"123"}, http://v.juhe.cn/sms/send
+Sender: &main.WeChatSender{sessionFile:"/tmp.session"}, &{/tmp.session}
+发送微信给：one, 内容：sender
+发送微信给：two, 内容：sender
+Sender: &main.WeChatSender{sessionFile:"/tmp.session"}, &{/tmp.session}
+发送微信给：one, 内容：sender
+发送微信给：two, 内容：sender
+```
+
+
+
+## 接口匿名嵌入
+
+接口之中也可以嵌入已存在的接口，从而实现接口的扩展。
+
+### 定义 
+
+```go
+package main
+
+import "fmt"
+
+// 定义Sender接口
+type Sender interface {
+	Send(msg string) error
+}
+
+// 定义Sender接口
+type Receiver interface {
+	Receiver() (string, error)
+}
+
+// 定义Connection接口， 由Sender和Receiver组合
+type Connection interface {
+	Sender
+	Receiver
+	Open() error
+	Close() error
+}
+
+// 定义TCPConnection 结构体，并实现Connection接口中Open、Send、Receive、Close方法
+type TCPConnection struct {
+	addr string
+	port int
+}
+
+func (conn TCPConnection) Open() error {
+	fmt.Println("打开")
+	return nil
+}
+
+func (conn TCPConnection) Send(msg string) error {
+	fmt.Println("发送消息")
+	return nil
+}
+
+func (conn TCPConnection) Receiver() (string, error) {
+	fmt.Println("接收消息")
+	return "", nil
+}
+
+func (conn TCPConnection) Close() error {
+	fmt.Printf("关闭")
+	return nil
+}
+
+func main() {
+
+	var conn Connection = TCPConnection{"127.0.0.1", 8888}
+	conn.Open()
+	conn.Send("HI")
+	msg, _ := conn.Receiver()
+	fmt.Printf("%q\n", msg)
+	conn.Close()
+}
+
+```
+
+### 实现 
+
+```go
+package main
+
+import "fmt"
+
+// 定义Sender接口
+type Sender interface {
+	Send(msg string) error
+}
+
+// 定义Sender接口
+type Receiver interface {
+	Receiver() (string, error)
+}
+
+// 定义Connection接口， 由Sender和Receiver组合
+type Connection interface {
+	Sender
+	Receiver
+	Open() error
+	Close() error
+}
+
+// 定义TCPConnection 结构体，并实现Connection接口中Open、Send、Receive、Close方法
+type TCPConnection struct {
+	addr string
+	port int
+}
+
+func (conn TCPConnection) Open() error {
+	fmt.Println("打开")
+	return nil
+}
+
+func (conn TCPConnection) Send(msg string) error {
+	fmt.Println("发送消息")
+	return nil
+}
+
+func (conn TCPConnection) Receiver() (string, error) {
+	fmt.Println("接收消息")
+	return "", nil
+}
+
+func (conn TCPConnection) Close() error {
+	fmt.Printf("关闭")
+	return nil
+}
+
+func main() {
+
+	var conn Connection = TCPConnection{"127.0.0.1", 8888}
+	conn.Open()
+	conn.Send("HI")
+	msg, _ := conn.Receiver()
+	fmt.Printf("%q\n", msg)
+	conn.Close()
+}
+
+```
+
+### 使用 
+
+```go
+package main
+
+import "fmt"
+
+// 定义Sender接口
+type Sender interface {
+	Send(msg string) error
+}
+
+// 定义Sender接口
+type Receiver interface {
+	Receiver() (string, error)
+}
+
+// 定义Connection接口， 由Sender和Receiver组合
+type Connection interface {
+	Sender
+	Receiver
+	Open() error
+	Close() error
+}
+
+// 定义TCPConnection 结构体，并实现Connection接口中Open、Send、Receive、Close方法
+type TCPConnection struct {
+	addr string
+	port int
+}
+
+func (conn TCPConnection) Open() error {
+	fmt.Println("打开")
+	return nil
+}
+
+func (conn TCPConnection) Send(msg string) error {
+	fmt.Println("发送消息")
+	return nil
+}
+
+func (conn TCPConnection) Receiver() (string, error) {
+	fmt.Println("接收消息")
+	return "", nil
+}
+
+func (conn TCPConnection) Close() error {
+	fmt.Printf("关闭")
+	return nil
+}
+
+func main() {
+
+	var conn Connection = TCPConnection{"127.0.0.1", 8888}
+	conn.Open()
+	conn.Send("HI")
+	msg, _ := conn.Receiver()
+	fmt.Printf("%q\n", msg)
+	conn.Close()
+}
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+打开
+发送消息
+接收消息
+""
+关闭
+```
+
+
+## 匿名接口 
+
+在定义变量时将类型指定为接口的函数签名的接口，此时叫匿名接口。匿名接口常用于初始化一次接口变量的场景。
+
+
+```go
+
+package main
+
+import "fmt"
+
+// 定义Sender接口
+type Sender interface {
+	Send(msg string) error
+}
+
+// 定义Sender接口
+type Receiver interface {
+	Receiver() (string, error)
+}
+
+// 定义Connection接口， 由Sender和Receiver组合
+type Connection interface {
+	Sender
+	Receiver
+	Open() error
+	Close() error
+}
+
+// 定义TCPConnection 结构体，并实现Connection接口中Open、Send、Receive、Close方法
+type TCPConnection struct {
+	addr string
+	port int
+}
+
+func (conn TCPConnection) Open() error {
+	fmt.Println("打开")
+	return nil
+}
+
+func (conn TCPConnection) Send(msg string) error {
+	fmt.Println("发送消息")
+	return nil
+}
+
+func (conn TCPConnection) Receiver() (string, error) {
+	fmt.Println("接收消息")
+	return "", nil
+}
+
+func (conn TCPConnection) Close() error {
+	fmt.Printf("关闭")
+	return nil
+}
+
+func main() {
+
+	var conn Connection = TCPConnection{"127.0.0.1", 8888}
+	conn.Open()
+	conn.Send("HI")
+	msg, _ := conn.Receiver()
+	fmt.Printf("%q\n", msg)
+	conn.Close()
+
+	var closer interface {
+		Close() error
+	}
+	fmt.Printf("%T, %#v\n", closer, closer)
+	closer = conn
+	closer.Close()
+}
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+打开
+发送消息
+接收消息
+""
+关闭<nil>, <nil>
+关闭
+```
+
+
+## 空接口 
+
+不包含任何函数签名的接口叫做空接口，空接口声明的变量可以赋值为任何类型的变量（任意接口）
+
+### 定义 
+
+语法： interface{}
+
+```go
+
+package main
+
+import "fmt"
+
+func main() {
+	var i01 interface{} = 1
+	var i02 interface{} = true
+	var i03 interface{} = "我是kk"
+	var i04 interface{} = &i03
+	var i05 interface{} = [...]int{1, 2, 3, 4, 5}
+	var i06 interface{} = []int{1, 2, 3, 4, 5}
+	var i07 interface{} = map[string]string{"name": "kk"}
+	var i08 interface{} = struct{ X, Y int }{1, 2}
+
+	fmt.Printf("%#v\n", i01)
+	fmt.Printf("%#v\n", i02)
+	fmt.Printf("%#v\n", i03)
+	fmt.Printf("%#v\n", i04)
+	fmt.Printf("%#v\n", i05)
+	fmt.Printf("%#v\n", i06)
+	fmt.Printf("%#v\n", i07)
+	fmt.Printf("%#v\n", i08)
+}
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+1
+true
+"我是kk"
+(*interface {})(0xc0000481f0)
+[5]int{1, 2, 3, 4, 5}
+[]int{1, 2, 3, 4, 5}
+map[string]string{"name":"kk"}
+struct { X int; Y int }{X:1, Y:2}
+```
+
+
+### 使用场景 
+
+常声明函数参数类型为interface{}, 用于接收任意类型的变量
+
+```go
+// package main
+
+// import "fmt"
+
+// // 定义Sender接口
+// type Sender interface {
+// 	Send(msg string) error
+// }
+
+// // 定义Sender接口
+// type Receiver interface {
+// 	Receiver() (string, error)
+// }
+
+// // 定义Connection接口， 由Sender和Receiver组合
+// type Connection interface {
+// 	Sender
+// 	Receiver
+// 	Open() error
+// 	Close() error
+// }
+
+// // 定义TCPConnection 结构体，并实现Connection接口中Open、Send、Receive、Close方法
+// type TCPConnection struct {
+// 	addr string
+// 	port int
+// }
+
+// func (conn TCPConnection) Open() error {
+// 	fmt.Println("打开")
+// 	return nil
+// }
+
+// func (conn TCPConnection) Send(msg string) error {
+// 	fmt.Println("发送消息")
+// 	return nil
+// }
+
+// func (conn TCPConnection) Receiver() (string, error) {
+// 	fmt.Println("接收消息")
+// 	return "", nil
+// }
+
+// func (conn TCPConnection) Close() error {
+// 	fmt.Printf("关闭")
+// 	return nil
+// }
+
+// func main() {
+
+// 	var conn Connection = TCPConnection{"127.0.0.1", 8888}
+// 	conn.Open()
+// 	conn.Send("HI")
+// 	msg, _ := conn.Receiver()
+// 	fmt.Printf("%q\n", msg)
+// 	conn.Close()
+
+// 	var closer interface {
+// 		Close() error
+// 	}
+// 	fmt.Printf("%T, %#v\n", closer, closer)
+// 	closer = conn
+// 	closer.Close()
+// }
+
+package main
+
+import "fmt"
+
+func printType(vs ...interface{}) {
+	for _, v := range vs {
+		switch v.(type) {
+		case nil:
+			fmt.Println("nil")
+		case int:
+			fmt.Println("int")
+		case bool:
+			fmt.Println("bool")
+		case string:
+			fmt.Println("string")
+		case [5]int:
+			fmt.Println("[5]int")
+		case []int:
+			fmt.Println("[]int")
+		case map[string]string:
+			fmt.Println("map[string]string")
+		default:
+			fmt.Println("unknow")
+		}
+	}
+}
+
+func main() {
+	var i01 interface{} = 1
+	var i02 interface{} = true
+	var i03 interface{} = "我是kk"
+	var i04 interface{} = &i03
+	var i05 interface{} = [...]int{1, 2, 3, 4, 5}
+	var i06 interface{} = []int{1, 2, 3, 4, 5}
+	var i07 interface{} = map[string]string{"name": "kk"}
+	var i08 interface{} = struct{ X, Y int }{1, 2}
+
+	fmt.Printf("%#v\n", i01)
+	fmt.Printf("%#v\n", i02)
+	fmt.Printf("%#v\n", i03)
+	fmt.Printf("%#v\n", i04)
+	fmt.Printf("%#v\n", i05)
+	fmt.Printf("%#v\n", i06)
+	fmt.Printf("%#v\n", i07)
+	fmt.Printf("%#v\n", i08)
+
+	printType(i01)
+	printType(i02)
+	printType(i03)
+	printType(i04)
+	printType(i05)
+	printType(i05, i06, i07, i08, nil)
+}
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+1
+true
+"我是kk"
+(*interface {})(0xc0000481f0)
+[5]int{1, 2, 3, 4, 5}
+[]int{1, 2, 3, 4, 5}
+map[string]string{"name":"kk"}
+struct { X int; Y int }{X:1, Y:2}
+int
+bool
+string
+unknow
+[5]int
+[5]int
+[]int
+map[string]string
+unknow
+nil
+```
+
+
+
+# 反射
+
+反射是指在运行时动态的访问和修改任意类型对象的结构和成员，在go 语言中提供reflect包提供反射的功能，每一个变量都有两个属性：类型(Type)和值(Value)
+
+## Type 
+
+reflect.Type 是一个接口类型，用于获取变量类型的信息，可通过reflect.Type 函数获取某个变量的类型信息
+
+### 通用方法
+
+- Name(): 类型名 
+- PkgPath()：包路径
+- Kind(): 类型枚举值
+- String(): Type字符串
+- Comparable(): 是否可以进行比较
+- Implements(Type): 是否实现某类型
+- AssignableTo(Type): 是否可赋值给某类型
+- ConvertibleTo(Type): 是否可转换为某类型
+- NumMethod(): 方法个数
+- Method(int): 通过索引获取方法类型
+  Method结构体常用属性：
+  - Name: 方法名 
+  - Type：函数类型 
+  - Func：方法值(Value)
+- MethodByName(string): 通过方法名字获取方法类型 
+
+### 特定类型方法 
+
+1. reflect.Int*, reflect.UInt*, reflect.Float*, reflect. Complex*
+   1. Bits(): 获取占用字节位数
+2. reflact.Array
+   1. Len(): 获取数组长度 
+   2. Elem(): 获取数据元素类型
+3. reflect.Slice
+   1. Elem(): 获取切片元素类型
+4. reflect.Map
+   1. Key(): 获取映射键类型
+   2. Elem(): 获取映射值类型
+5. reflect.Ptr
+   1. Elem(): 获取指向值类型
+6. reflect.Func
+   1. IsVariadic(): 是否具有可变参数
+   2. NumIn(): 参数个数
+   3. In(int): 通过索引获取参数类型
+   4. NumOut: 返回值个数
+   5. Out(int): 通过索引获取返回值类型
+7. reflect.Struct
+   1. NumField: 属性个数
+   2. Field(int)：通过索引获取属性
+   3. StructField 结构体常用属性: 
+      1. Name:属性名
+      2. Anonymous:是否为匿名
+      3. Tag:标签
+         1. StructTag 常用方法: 
+            1. Get(string)
+            2. Lookup(string)
+   4. FieldByName(string): 通过属性名获取属性
+
+
+## Value 
+
+reflect.Value 是一个结构体类型，用于获取变量值的信息，可通过reflect.ValueOf函数获取某个变量的值信息。
+
+### 创建方法
+
+### 通用方法 
+
+- Type(): 获取值类型
+- CanAddr()：是否可获取地址
+- Addr(): 获取地址
+- CanInterface(): 是否可以获取接口的
+- InterfaceData():
+- Interface(): 将变量转换为 interface{}
+- CanSet(): 是否可更新
+- isValid(): 是否初始化为零值
+- Kind()：获取值类型枚举值
+- NumMethod(): 方法个数
+- Method(int): 通过索引获取方法值
+- MethodByName(string): 通过方法名字获取方法值
+- Convert(Type)：转换为对应类型的值
+
+### 修改方法 
+
+- Set/Set*: 设置变量值 
+  
+### 调用方法 
+
+- Call 
+- CallSlice 
+
+### 特定类型方法 
+
+1. reflect.Int*, reflect.Unit*, 
+   1. Int(): 获取对应类型值
+   2. Unit(): 获取对应类型值
+2. reflect.Float* 
+   1. Float():获取对应类型值
+3. reflect. Complex* 
+   1. Complex():获取对应类型值
+4. reflact.Array
+   1. Len(): 获取数组长度
+   2. Index(int): 根据索引获取元素
+   3. Slice(int, int): 获取切片
+   4. Slice3(int, int, int): 获取切片
+5. reflect.Slice
+   1. IsNil(): 判断是否为
+   2. Len(): 获取元素数量
+   3. Cap(): 获取容量
+   4. Index(int): 根据索引获取元素
+   5. Slice(int, int): 获取切片
+   6. Slice3(int, int, int): 获取切片
+6. reflect.Map
+   1. IsNil(): 判断是否为
+   2. Len(): 获取元素数量
+   3. MapKeys(): 获取所有键
+   4. MapIndex(Value): 根据键获取值
+   5. MapRange():获取键值组成的可迭代对象
+7. reflect.Ptr
+   1. Elem(): 获取指向值类型（解引用）
+8. reflect.Func
+   1. IsVariadic(): 是否具有可变参数
+   2. NumIn(): 参数个数 ⚫ In(int): 通过索引获取参数类型
+   3. NumOut: 返回值个数
+   4. Out(int): 通过索引获取返回值类型
+9. reflect.Struct
+   1.  NumField: 属性个数
+   2.  Field(int)：通过索引获取属性
+   3.  StructField 结构体常用属性: 
+       1.  Name:属性名
+       2.  Anonymous:是否为匿名
+       3.  Tag:标签
+       4.  StructTag 常用方法:
+           1.  Get(string)
+           2.  Lookup(string)
+10. FieldByName(string): 通过属性名获取属性
+
+
+
+
+
+## 开发 
+
+objs包中创建用于测试的对象 
+
+### 打印变量信息
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+// 定义User结构体，并为每个属性定义标签
+
+type User struct {
+	id     int     `json:"id"`
+	name   string  `json:"name"`
+	Tel    string  `json:"addr"`
+	Height float32 `json:"height"`
+	Desc   *string `json:"desc"`
+	Weight *int    `json:"weight"`
+}
+
+func NewUser(id int, name string, tel string, height float32, desc string, weight int) *User {
+	return &User{id, name, tel, height, &desc, &weight}
+}
+
+// 定义String方法
+func (user User) String() string {
+	return fmt.Sprintf("User{id: %d, name: %s, tel: %s, height: %e, desc: %s, weight: %d}", user.id, user.name, user.Tel, user.Height, *user.Desc, *user.Weight
+	)
+}
+
+func (user User) GetId() int {
+	return user.id
+}
+
+func (user User) SetId(id int) {
+	user.id = id
+}
+
+func (user *User) GetName() string {
+	return user.name
+}
+
+func (user *User) SetName(name string) {
+	user.name = name
+}
+
+// 定义接口Closer
+type Closer interface {
+	Close() error
+}
+
+type Address struct {
+	ip   string "json:ip"
+	port int    "json:port"
+}
+
+func (address Address) GetIp() string {
+	return address.ip
+
+}
+
+func (address Address) GetPort() int {
+	return address.port
+}
+
+type Connection struct {
+	Address
+	status int
+}
+
+func NewConnection(ip string, port int) *Connection {
+	return &Connection{Address: Address{ip, port}}
+}
+
+func (conn *Connection) Send(msg string) error {
+	fmt.Printf("发送消息给[%s:%d]:%s", conn.ip, conn.port, msg)
+	return nil
+}
+
+func (conn *Connection) Close() error {
+	fmt.Printf("关闭连接[%s:%d]", conn.ip, conn.port)
+	return nil
+}
+
+// 打印变量类型信息
+func displayType(t reflect.Type, tab string) {
+	// 处理类型为nil
+	if t == nil {
+		fmt.Printf("<nil>")
+		return
+	}
+	// 获取类型对应的枚举值使用选择语句分别处理每种类型
+	switch t.Kind() {
+	case reflect.Int, reflect.Float32, reflect.Bool, reflect.String:
+		// 针对基本数据类型显示类型名
+		fmt.Printf("%s%s", tab, t.Name())
+	case reflect.Array, reflect.Slice:
+		// 针对数组和切片，直接打印Type对象
+		fmt.Printf("%s%s", tab, t)
+	case reflect.Map:
+		// 对于映射类型打印键和值的Type对象
+		fmt.Printf("%smap{\n", tab)
+		fmt.Printf("%s\tKey:", tab)
+		fmt.Printf("%s%s", tab, t.Key()) // 获取键的Type对象
+		fmt.Println()
+		fmt.Printf("%s\tValue: ", tab)
+		fmt.Printf("%s%s", tab, t.Elem()) // 获取值的Type对象
+		fmt.Println()
+		fmt.Printf("%s}", tab)
+	case reflect.Func:
+		// 针对函数打印参数和返回值，对应可变参数在最后一个参数添加之后添加。。。
+		fmt.Printf("%sfunc (", tab)
+
+		// 打印参数信息
+		// 获取参数数量并遍历
+		for i := 0; i < t.NumIn(); i++ {
+			fmt.Printf("%s", t.In(i)) // 根据索引获取第i个参数的Type 对象
+			if i != t.NumIn()-1 {
+				fmt.Printf(", ")
+			}
+		}
+		if t.IsVariadic() {
+			fmt.Printf("...")
+		}
+		fmt.Printf(") ")
+
+		// 打印返回值信息
+		if t.NumOut() > 0 {
+			fmt.Printf("( ")
+			for i := 0; i < t.NumOut(); i++ {
+				fmt.Printf("%s", t.Out(i)) // 根据索引获取第i个返回值的Type对象
+				if i != t.NumOut()-1 {
+					fmt.Printf(", ")
+				}
+			}
+			fmt.Printf(" )")
+		}
+		fmt.Printf("{}")
+	case reflect.Struct:
+		// 针对结构体显示结构体属性和方法
+		fmt.Printf("%stype %s struct {\n", tab, t.Name())
+
+		// 获取属性数量并遍历
+		fmt.Printf("%s\tFields(%d):\n", tab, t.NumField())
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)                                                      // 根据索引获取第i个属性的StructField对象
+			fmt.Printf("%s\t\t%s\t%s\t`%s`", tab, field.Name, field.Type, field.Tag) // 显示属性名，属性的Type对象和标签
+			fmt.Printf(",\n")
+		}
+
+		// 获取方法数量并遍历
+		fmt.Printf("\n%s\tMethods(%d):\n", tab, t.NumMethod())
+		for i := 0; i < t.NumMethod(); i++ {
+			// 打印方法信息
+			displayMethod(t.Method(i), tab+"\t\t")
+			fmt.Printf(",\n")
+		}
+		fmt.Printf("%s}", tab)
+	case reflect.Ptr:
+		// 对于指针类型，递归分析其引用值
+		fmt.Printf("%s*{\n", tab)
+		displayType(t.Elem(), tab+"\t") // 获取指针的引用值，并递归调用displayType进行分析显示
+		// 打印指针变量的方法
+		if t.NumMethod() > 0 { // 获取方法数量
+			fmt.Printf("\n%s\tMethods(%d):\n", tab, t.NumMethod())
+			for i := 0; i < t.NumMethod(); i++ {
+				// 打印方法信息
+				displayMethod(t.Method(i), tab+"\t\t")
+				if i != t.NumMethod()-1 {
+					fmt.Printf(",\n")
+				}
+			}
+		}
+		fmt.Printf("\n%s", tab)
+	default:
+		fmt.Printf("%sUnkonw[%s]", tab, t)
+	}
+}
+
+// 打印reflect.Method类型变量method的信息
+func displayMethod(method reflect.Method, tab string) {
+	// 获取方法接收者
+	t := method.Type
+	fmt.Printf("%sfunc %s(", tab, method.Name) // 显示方法名
+
+	// 打印参数信息
+	// 获取参数数量并遍历
+	for i := 0; i < t.NumIn(); i++ {
+		fmt.Printf("%s", t.In(i)) // 根据索引获取第i个参数的Type对象
+		if i != t.NumIn()-1 {
+			fmt.Printf(", ")
+		}
+	}
+
+	// 打印可变参数信息
+	if t.IsVariadic() {
+		fmt.Printf("...")
+	}
+
+	// 打印返回值信息
+	fmt.Printf(") ")
+
+	if t.NumOut() > 0 {
+		fmt.Printf("(")
+		// 获取返回值数量并遍历
+		for i := 0; i < t.NumOut(); i++ {
+			fmt.Printf("%s", t.Out(i)) // 根据索引获取第i个返回值的Type对象
+			if i != t.NumOut()-1 {
+				fmt.Printf(", ")
+			}
+		}
+		fmt.Printf(") ")
+	}
+	fmt.Printf("{}")
+}
+
+func main() {
+	vars := make([]interface{}, 0, 20)
+
+	var intV int = 1
+	var floatV float32 = 3.14
+	var boolV bool = true
+	var stringV string = "吾日三省吾身，为人谋而不忠乎？与朋友交而不信呼？传不习呼？"
+	var arrayV [5]int = [...]int{1, 2, 3, 4, 5}
+	var sliceV []int = make([]int, 3, 5)
+	var mapV map[string]string = map[string]string{"name": "kk"}
+	var funcV1 func(...interface{}) error = func(x ...interface{}) error { fmt.Println(x...); return nil }
+	var funcV2 func(string, int) *Connection = NewConnection
+	var userV *User = NewUser(1, "kk", "12000000000", 1.68, "少年经不得顺境，中间经不得闲境，晚年经不得逆境", 72)
+	var CloserV Closer
+	vars = append(vars, intV, &intV, floatV, boolV, stringV, arrayV, sliceV, mapV, funcV1, funcV2, *userV, userV, CloserV)
+	for _, v := range vars {
+		displayType(reflect.TypeOf(v), "")
+		fmt.Println()
+	}
+}
+
+```
+
+### 打印变量值信息
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
