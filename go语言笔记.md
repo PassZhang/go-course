@@ -8803,8 +8803,7 @@ func NewUser(id int, name string, tel string, height float32, desc string, weigh
 
 // 定义String方法
 func (user User) String() string {
-	return fmt.Sprintf("User{id: %d, name: %s, tel: %s, height: %e, desc: %s, weight: %d}", user.id, user.name, user.Tel, user.Height, *user.Desc, *user.Weight
-	)
+	return fmt.Sprintf("User{id: %d, name: %s, tel: %s, height: %e, desc: %s, weight: %d}", user.id, user.name, user.Tel, user.Height, *user.Desc, *user.Weight)
 }
 
 func (user User) GetId() int {
@@ -9014,10 +9013,964 @@ func main() {
 	}
 }
 
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+int
+*{
+        int
+
+float32
+bool
+string
+[5]int
+[]int
+map{
+        Key:string
+        Value: string
+}
+func ([]interface {}...) ( error ){}
+func (string, int) ( *main.Connection ){}
+type User struct {
+        Fields(6):
+                id      int     `json:"id"`,
+                name    string  `json:"name"`,
+                Tel     string  `json:"addr"`,
+                Height  float32 `json:"height"`,
+                Desc    *string `json:"desc"`,
+                Weight  *int    `json:"weight"`,
+
+        Methods(3):
+                func GetId(main.User) (int) {},
+                func SetId(main.User, int) {},
+                func String(main.User) (string) {},
+}
+*{
+        type User struct {
+                Fields(6):
+                        id      int     `json:"id"`,
+                        name    string  `json:"name"`,
+                        Tel     string  `json:"addr"`,
+                        Height  float32 `json:"height"`,
+                        Desc    *string `json:"desc"`,
+                        Weight  *int    `json:"weight"`,
+
+                Methods(3):
+                        func GetId(main.User) (int) {},
+                        func SetId(main.User, int) {},
+                        func String(main.User) (string) {},
+        }
+        Methods(5):
+                func GetId(*main.User) (int) {},
+                func GetName(*main.User) (string) {},
+                func SetId(*main.User, int) {},
+                func SetName(*main.User, string) {},
+                func String(*main.User) (string) {}
+
+<nil>
 ```
 
 ### 打印变量值信息
 
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"strconv"
+)
+
+// 定义User结构体，并为每个属性定义标签
+
+type User struct {
+	id     int     `json:"id"`
+	name   string  `json:"name"`
+	Tel    string  `json:"addr"`
+	Height float32 `json:"height"`
+	Desc   *string `json:"desc"`
+	Weight *int    `json:"weight"`
+}
+
+func NewUser(id int, name string, tel string, height float32, desc string, weight int) *User {
+	return &User{id, name, tel, height, &desc, &weight}
+}
+
+// 定义String方法
+func (user User) String() string {
+	return fmt.Sprintf("User{id: %d, name: %s, tel: %s, height: %e, desc: %s, weight: %d}", user.id, user.name, user.Tel, user.Height, *user.Desc, *user.Weight)
+}
+
+func (user User) GetId() int {
+	return user.id
+}
+
+func (user User) SetId(id int) {
+	user.id = id
+}
+
+func (user *User) GetName() string {
+	return user.name
+}
+
+func (user *User) SetName(name string) {
+	user.name = name
+}
+
+// 定义接口Closer
+type Closer interface {
+	Close() error
+}
+
+type Address struct {
+	ip   string "json:ip"
+	port int    "json:port"
+}
+
+func (address Address) GetIp() string {
+	return address.ip
+
+}
+
+func (address Address) GetPort() int {
+	return address.port
+}
+
+type Connection struct {
+	Address
+	status int
+}
+
+func NewConnection(ip string, port int) *Connection {
+	return &Connection{Address: Address{ip, port}}
+}
+
+func (conn *Connection) Send(msg string) error {
+	fmt.Printf("发送消息给[%s:%d]:%s", conn.ip, conn.port, msg)
+	return nil
+}
+
+func (conn *Connection) Close() error {
+	fmt.Printf("关闭连接[%s:%d]", conn.ip, conn.port)
+	return nil
+}
+
+// 打印reflect.Value类型变量v的信息
+func displayValue(value reflect.Value, tab string) {
+
+	// 获取值对应的枚举类型使用选择语句分别处理每种类型
+	switch value.Kind() {
+	case reflect.Int:
+		// 针对整数类型，获取值对应的Type对象并使用Int函数转换为对应的基本类型，并使用strconv将转换为string类型
+		fmt.Printf("%s[%s] %s", tab, value.Type(), strconv.FormatInt(value.Int(), 10))
+	case reflect.Float32:
+		// 针对浮点类型，获取值对应的Type对象并使用Float函数转换为对应的基本类型，并使用strconv将转化为string类型
+		fmt.Printf("%s[%s] %s", tab, value.Type(), strconv.FormatFloat(value.Float(), 'E', -1, 64))
+	case reflect.Bool:
+		// 针对布尔类型，获取值对应的Type对象并使用Bool函数转换为对应的基本类型，并使用strconv将转化为string类型
+		fmt.Printf("%s[%s] %s", tab, value.Type(), strconv.FormatBool(value.Bool()))
+	case reflect.String:
+		// 针对字符集类型，获取值对应的Type对象并打印值
+		fmt.Printf("%s[%s] %s", tab, value.Type(), value)
+	case reflect.Array:
+		// 针对数组类型，获取值对应的Type对象
+		fmt.Printf("%s[%s] {\n", tab, value.Type())
+
+		// 获取数组的长度
+		for i := 0; i < value.Len(); i++ {
+			displayValue(value.Index(i), tab+"\t") // 根据索引获取数组的每个元素，并调用displayValue递归显示
+			fmt.Printf(",\n")
+		}
+		fmt.Printf("%s}", tab)
+	case reflect.Slice:
+		// 针对切片类型，获取值对应的Type对象，长度和容量
+		fmt.Printf("%s[%s](%d:%d) {\n", tab, value.Type(), value.Len(), value.Cap())
+
+		// 获取切片的长度
+		for i := 0; i < value.Len(); i++ {
+			displayValue(value.Index(i), tab+"\t") // 根据索引获取数组的每个元素，并调用displayValue递归显示
+			fmt.Printf(",\n")
+		}
+		fmt.Printf("%s}", tab)
+	case reflect.Map:
+		// 针对映射类型，获取值对应的Type对象
+		fmt.Printf("%s[%s] {\n", tab, value.Type())
+		// 获取映射迭代对象遍历键值对
+		iter := value.MapRange()
+		for iter.Next() { // 判断迭代对象是否到末尾
+			displayValue(iter.Key(), tab+"\t") // 根据从迭代对象获取当前键，并调用displayValue递归显示
+			fmt.Printf(" : ")
+			displayValue(iter.Value(), "") // 根据从迭代对象获取当前值，并调用displayValue递归显示
+			fmt.Printf(",\n")
+		}
+		fmt.Printf("%s}", tab)
+	case reflect.Struct:
+		// 针对结构体类型，获取值对应的Type对象
+		structType := value.Type()
+		fmt.Printf("%s[%s] {\n", tab, structType)
+
+		// 获取属性数量并遍历
+		for i := 0; i < value.NumField(); i++ {
+			structField := structType.Field(i)           // 根据索引获取属性的类型
+			field := value.Field(i)                      // 根据索引获取属性的值
+			fmt.Printf("%s\t%s:", tab, structField.Name) // 打印类型名
+			displayValue(field, tab+"\t")                // 调用displayValue递归显示
+			fmt.Printf(", \n")
+
+		}
+		fmt.Printf("%s}", tab)
+
+	case reflect.Ptr:
+		// 针对指针类型，获取值对应的Type对象
+		fmt.Printf("%s[%s] (\n", tab, value.Type())
+
+		// 获取指针的引用值，并递归调用displayValue函数递归分析显示
+		displayValue(value.Elem(), tab+"\t")
+		fmt.Printf("\n%s", tab)
+	default:
+		fmt.Printf("%sUnkonw[%#v]", tab, value)
+	}
+}
+
+func main() {
+	vars := make([]interface{}, 0, 20)
+
+	var intV int = 1
+	var floatV float32 = 3.14
+	var boolV bool = true
+	var stringV string = "吾日三省吾身，为人谋而不忠乎？与朋友交而不信呼？传不习呼？"
+	var arrayV [5]int = [...]int{1, 2, 3, 4, 5}
+	var sliceV []int = make([]int, 3, 5)
+	var mapV map[string]string = map[string]string{"name": "kk"}
+	var userV *User = NewUser(1, "kk", "12000000000", 1.68, "少年经不得顺境，中间经不得闲境，晚年经不得逆境", 72)
+	var CloserV Closer
+	vars = append(vars, intV, &intV, floatV, boolV, stringV, arrayV, sliceV, mapV, *userV, userV, CloserV)
+	for _, v := range vars {
+		displayValue(reflect.ValueOf(v), "")
+		fmt.Println()
+	}
+}
+
+
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+[int] 1
+[*int] (
+        [int] 1
+
+[float32] 3.140000104904175E+00
+[bool] true
+[string] 吾日三省吾身，为人谋而不忠乎？与朋友交而不信呼？传不习呼？
+[[5]int] {
+        [int] 1,
+        [int] 2,
+        [int] 3,
+        [int] 4,
+        [int] 5,
+}
+[[]int](3:5) {
+        [int] 0,
+        [int] 0,
+        [int] 0,
+}
+[map[string]string] {
+        [string] name : [string] kk,
+}
+[main.User] {
+        id:     [int] 1,
+        name:   [string] kk,
+        Tel:    [string] 12000000000,
+        Height: [float32] 1.6799999475479126E+00,
+        Desc:   [*string] (
+                [string] 少年经不得顺境，中间经不得闲境，晚年经不得逆境
+        ,
+        Weight: [*int] (
+                [int] 72
+        ,
+}
+[*main.User] (
+        [main.User] {
+                id:             [int] 1,
+                name:           [string] kk,
+                Tel:            [string] 12000000000,
+                Height:         [float32] 1.6799999475479126E+00,
+                Desc:           [*string] (
+                        [string] 少年经不得顺境，中间经不得闲境，晚年经不得逆境
+                ,
+                Weight:         [*int] (
+                        [int] 72
+                ,
+        }
+
+Unkonw[<invalid reflect.Value>]
+```
+
+### 更新变量值
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"reflect"
+	"time"
+)
+
+// 定义User结构体，并为每个属性定义标签
+
+type User struct {
+	id     int     `json:"id"`
+	name   string  `json:"name"`
+	Tel    string  `json:"addr"`
+	Height float32 `json:"height"`
+	Desc   *string `json:"desc"`
+	Weight *int    `json:"weight"`
+}
+
+func NewUser(id int, name string, tel string, height float32, desc string, weight int) *User {
+	return &User{id, name, tel, height, &desc, &weight}
+}
+
+// 定义String方法
+func (user User) String() string {
+	return fmt.Sprintf("User{id: %d, name: %s, tel: %s, height: %e, desc: %s, weight: %d}", user.id, user.name, user.Tel, user.Height, *user.Desc, *user.Weight)
+}
+
+func (user User) GetId() int {
+	return user.id
+}
+
+func (user User) SetId(id int) {
+	user.id = id
+}
+
+func (user *User) GetName() string {
+	return user.name
+}
+
+func (user *User) SetName(name string) {
+	user.name = name
+}
+
+// 定义接口Closer
+type Closer interface {
+	Close() error
+}
+
+type Address struct {
+	ip   string "json:ip"
+	port int    "json:port"
+}
+
+func (address Address) GetIp() string {
+	return address.ip
+
+}
+
+func (address Address) GetPort() int {
+	return address.port
+}
+
+type Connection struct {
+	Address
+	status int
+}
+
+func NewConnection(ip string, port int) *Connection {
+	return &Connection{Address: Address{ip, port}}
+}
+
+func (conn *Connection) Send(msg string) error {
+	fmt.Printf("发送消息给[%s:%d]:%s", conn.ip, conn.port, msg)
+	return nil
+}
+
+func (conn *Connection) Close() error {
+	fmt.Printf("关闭连接[%s:%d]", conn.ip, conn.port)
+	return nil
+}
+
+// 修改reflect.Value类型变量value的信息
+func changeValue(value reflect.Value, path string) {
+
+	// 获取值对应的枚举类型使用选择语句分别处理每种类型
+	switch value.Kind() {
+	case reflect.Int:
+		// 对于可设置的Int类型使用SetInt更新内存数据
+		if value.CanSet() {
+			fmt.Printf("Int CanSet: %s.%s\n", path, value.Type())
+			value.SetInt(value.Int() + rand.Int63n(100))
+		}
+	case reflect.Float32:
+		// 对于可设置的Float类型使用SetFloat更新内存数据
+		if value.CanSet() {
+			fmt.Printf("Float CanSet: %s.%s\n", path, value.Type())
+			value.SetFloat(value.Float() + rand.Float64())
+		}
+	case reflect.Bool:
+		// 对于可设置的Float类型使用SetInt更新内存数据
+		if value.CanSet() {
+			fmt.Printf("Bool CanSet: %s.%s\n", path, value.Type())
+			value.SetBool(!value.Bool())
+		}
+	case reflect.String:
+		// 对于可设置的String类型使用SetString更新内存数据
+		if value.CanSet() {
+			fmt.Printf("String CanSet: %s.%s\n", path, value.Type())
+			value.SetString("change: " + value.String())
+		}
+	case reflect.Array:
+		// 对于可设置的数据类型提柜调用ChangeValue对每个元素更新内存数据
+		if value.CanSet() {
+			fmt.Printf("Array CanSet: %s.%s\n", path, value.Type())
+		}
+		// 获取数组的长度
+		for i := 0; i < value.Len(); i++ {
+			changeValue(value.Index(i), path+".array") // 根据索引获取数组的每个元素，并调用changeValue递归显示
+		}
+	case reflect.Slice:
+		// 针对切片类型递归调用ChangeValue对每个元素更新内存数据
+		for i := 0; i < value.Len(); i++ {
+			changeValue(value.Index(i), path+".slice") // 根据索引获取数组的每个元素，并调用changeValue递归显示
+		}
+	case reflect.Map:
+		// 针对映射类型，获取值对应的Type对象
+		fmt.Printf("%s[%s] {\n", path, value.Type())
+		// 获取映射迭代对象遍历键值对
+		keys := value.MapKeys() // 获取映射所有Key组成的Value切片
+		for _, key := range keys {
+			value.SetMapIndex(key, reflect.ValueOf("change: "+value.MapIndex(key).String()))
+		}
+	case reflect.Struct:
+		if value.CanSet() {
+			fmt.Printf("Struct CanSet: %s.%s\n", path, value.Type())
+		}
+		// 对于结构体类型递归调用ChangeValue对每个元素更新内存数据
+		for i := 0; i < value.NumField(); i++ {
+			changeValue(value.Field(i), path+".struct") // 根据索引获取结构体的每个属性，并调用changeValue递归修改
+		}
+	case reflect.Ptr:
+		if value.CanSet() {
+			fmt.Printf("CanSet: %s.%s\n", path, value.Type())
+		}
+		// 对于指针类型，递归调用对其引用值进行修改
+		changeValue(value.Elem(), path+".pointer")
+	default:
+		fmt.Printf("%sUnkonw[%#v]", path, value)
+	}
+}
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+	vars := make([]interface{}, 0, 20)
+
+	var intV int = 1
+	var floatV float32 = 3.14
+	var boolV bool = true
+	var stringV string = "吾日三省吾身，为人谋而不忠乎？与朋友交而不信呼？传不习呼？"
+	var arrayV [5]int = [...]int{1, 2, 3, 4, 5}
+	var sliceV []int = make([]int, 3, 5)
+	var mapV map[string]string = map[string]string{"name": "kk"}
+	var userV *User = NewUser(1, "kk", "12000000000", 1.68, "少年经不得顺境，中间经不得闲境，晚年经不得逆境", 72)
+	var closerV Closer
+	vars = append(vars, intV, &intV, floatV, boolV, stringV, arrayV, sliceV, mapV, *userV, userV, closerV)
+	// intV, floatV, boolV, stringV, stringV, arrayV 不可修改
+	// &intV, &floatV, &boolV, &stringV, &stringV, &arrayV 可修改， 指针类型通过Elem获取的引用值可获取地址
+
+	vars = append(vars, sliceV, mapV, *userV, userV, closerV)
+	// sliceV, mapV 可修改
+	// userV 通过Elem获取的引用值可获取地址且公开的属性修改
+	// *userV 公开属性可修改（结构体通过Elem获取的引用值可获取地址）
+	for _, v := range vars {
+		fmt.Println("------------------------------")
+		fmt.Printf("%v\n", v)
+		vv := reflect.ValueOf(v)
+		changeValue(vv, "")
+		fmt.Printf("%v\n", reflect.Indirect(vv))
+	}
+}
+
+
+
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+------------------------------
+1
+1
+------------------------------
+0xc0000100a0
+Int CanSet: .pointer.int
+7
+------------------------------
+3.14
+3.14
+------------------------------
+true
+true
+------------------------------
+吾日三省吾身，为人谋而不忠乎？与朋友交而不信呼？传不习呼？
+吾日三省吾身，为人谋而不忠乎？与朋友交而不信呼？传不习呼？
+------------------------------
+[1 2 3 4 5]
+[1 2 3 4 5]
+------------------------------
+[0 0 0]
+Int CanSet: .slice.int
+Int CanSet: .slice.int
+Int CanSet: .slice.int
+[87 71 84]
+------------------------------
+map[name:kk]
+[map[string]string] {
+map[name:change: kk]
+------------------------------
+User{id: 1, name: kk, tel: 12000000000, height: 1.680000e+00, desc: 少年经不得顺境，中间经不得闲境，晚年经不得逆境, weight: 72}
+String CanSet: .struct.pointer.string
+Int CanSet: .struct.pointer.int
+User{id: 1, name: kk, tel: 12000000000, height: 1.680000e+00, desc: change: 少年经不得顺境，中间经不得闲境，晚年经不得逆
+境, weight: 76}
+------------------------------
+User{id: 1, name: kk, tel: 12000000000, height: 1.680000e+00, desc: change: 少年经不得顺境，中间经不得闲境，晚年经不得逆
+境, weight: 76}
+Struct CanSet: .pointer.main.User
+String CanSet: .pointer.struct.string
+Float CanSet: .pointer.struct.float32
+CanSet: .pointer.struct.*string
+String CanSet: .pointer.struct.pointer.string
+CanSet: .pointer.struct.*int
+Int CanSet: .pointer.struct.pointer.int
+User{id: 1, name: kk, tel: change: 12000000000, height: 2.397326e+00, desc: change: change: 少年经不得顺境，中间经不得闲
+境，晚年经不得逆境, weight: 122}
+------------------------------
+<nil>
+Unkonw[<invalid reflect.Value>]<invalid reflect.Value>
+------------------------------
+[87 71 84]
+Int CanSet: .slice.int
+Int CanSet: .slice.int
+Int CanSet: .slice.int
+[125 150 130]
+------------------------------
+map[name:change: kk]
+[map[string]string] {
+map[name:change: change: kk]
+------------------------------
+User{id: 1, name: kk, tel: 12000000000, height: 1.680000e+00, desc: change: change: 少年经不得顺境，中间经不得闲境，晚年
+经不得逆境, weight: 122}
+String CanSet: .struct.pointer.string
+Int CanSet: .struct.pointer.int
+User{id: 1, name: kk, tel: 12000000000, height: 1.680000e+00, desc: change: change: change: 少年经不得顺境，中间经不得闲
+境，晚年经不得逆境, weight: 217}
+------------------------------
+User{id: 1, name: kk, tel: change: 12000000000, height: 2.397326e+00, desc: change: change: change: 少年经不得顺境，中间
+经不得闲境，晚年经不得逆境, weight: 217}
+Struct CanSet: .pointer.main.User
+String CanSet: .pointer.struct.string
+Float CanSet: .pointer.struct.float32
+CanSet: .pointer.struct.*string
+String CanSet: .pointer.struct.pointer.string
+CanSet: .pointer.struct.*int
+Int CanSet: .pointer.struct.pointer.int
+User{id: 1, name: kk, tel: change: change: 12000000000, height: 2.994064e+00, desc: change: change: change: change: 少年
+经不得顺境，中间经不得闲境，晚年经不得逆境, weight: 236}
+------------------------------
+<nil>
+Unkonw[<invalid reflect.Value>]<invalid reflect.Value>
+```
+
+变量可修改的条件：
+1. 对于基本数据类型变量可获取地址
+2. 对于结构体属性必须是可获取地址且为公开的属性
+
+
+
+
+### 调用函数 
+
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+// 定义User结构体，并为每个属性定义标签
+
+type User struct {
+	id     int     `json:"id"`
+	name   string  `json:"name"`
+	Tel    string  `json:"addr"`
+	Height float32 `json:"height"`
+	Desc   *string `json:"desc"`
+	Weight *int    `json:"weight"`
+}
+
+func NewUser(id int, name string, tel string, height float32, desc string, weight int) *User {
+	return &User{id, name, tel, height, &desc, &weight}
+}
+
+// 定义String方法
+func (user User) String() string {
+	return fmt.Sprintf("User{id: %d, name: %s, tel: %s, height: %e, desc: %s, weight: %d}", user.id, user.name, user.Tel, user.Height, *user.Desc, *user.Weight)
+}
+
+func (user User) GetId() int {
+	return user.id
+}
+
+func (user User) SetId(id int) {
+	user.id = id
+}
+
+func (user *User) GetName() string {
+	return user.name
+}
+
+func (user *User) SetName(name string) {
+	user.name = name
+}
+
+// 定义接口Closer
+type Closer interface {
+	Close() error
+}
+
+type Address struct {
+	ip   string "json:ip"
+	port int    "json:port"
+}
+
+func (address Address) GetIp() string {
+	return address.ip
+
+}
+
+func (address Address) GetPort() int {
+	return address.port
+}
+
+type Connection struct {
+	Address
+	status int
+}
+
+func NewConnection(ip string, port int) *Connection {
+	return &Connection{Address: Address{ip, port}}
+}
+
+func (conn *Connection) Send(msg string) error {
+	fmt.Printf("发送消息给[%s:%d]:%s", conn.ip, conn.port, msg)
+	return nil
+}
+
+func (conn *Connection) Close() error {
+	fmt.Printf("关闭连接[%s:%d]", conn.ip, conn.port)
+	return nil
+}
+
+// 修改reflect.Value类型变量value的信息
+func callValue(value reflect.Value) {
+
+	fmt.Println("-----------------------------", value.Type())
+	// 获取值对应的枚举类型使用选择语句分别处理每种类型
+	switch value.Kind() {
+	case reflect.Array, reflect.Slice:
+		// 针对数组/切片类型，对数组/切片中元素进行递归处理
+		for i := 0; i < value.Len(); i++ {
+			callValue(value.Index(i)) // 根据索引获取数组的每个元素，并调用callValue递归调用
+
+		}
+	case reflect.Map:
+		// 针对映射类型，对映射中值进行递归处理
+		iter := value.MapRange()
+		for iter.Next() {
+			callValue(iter.Value()) // 根据切片获取数组的每个元素，并调用callValue递归调用
+		}
+
+	case reflect.Struct:
+		// 针对结构体类型，执行所有方法
+		for i := 0; i < value.NumMethod(); i++ {
+			callMethod(value.Method(i), value.Type(), value.Type().Method(i))
+		}
+	case reflect.Ptr:
+		// 针对指针类型，执行所有方法
+		for i := 0; i < value.NumMethod(); i++ {
+			callMethod(value.Method(i), value.Elem().Type(), value.Type().Method(i))
+		}
+	case reflect.Func:
+		// 针对方法类型，执行方法
+		callFunc(value)
+	default:
+		fmt.Printf("Unkonw[%#v]\n", value)
+	}
+}
+
+// 调用函数
+func callFunc(f reflect.Value) {
+	// 获取函数类型并打印
+	ftype := f.Type()
+	fmt.Printf("%s\n", ftype.String())
+
+	// 组装函数参数
+	parameters := make([]reflect.Value, 0)
+	for i := 0; i < ftype.NumIn(); i++ {
+		parameters = append(parameters, reflect.Zero(ftype.In(i))) // 通过reflect.Zero创建参数同类型零值
+
+	}
+
+	// 调用函数并打印执行结果
+	if ftype.IsVariadic() {
+		fmt.Printf("%#v", f.CallSlice(parameters))
+
+	} else {
+		fmt.Println(f.Call(parameters))
+	}
+}
+
+// 调用方法
+func callMethod(f reflect.Value, t reflect.Type, m reflect.Method) {
+	// 获取函数类型并打印
+	ftype := f.Type()
+	fmt.Printf("method: %s.%s => %s\n", t.Name(), m.Name, ftype.String())
+
+	// 组装函数参数
+	parameters := make([]reflect.Value, 0)
+	for i := 0; i < ftype.NumIn(); i++ {
+		parameters = append(parameters, reflect.New(ftype.In(i)).Elem()) // 通过reflect.New创建参数同类型零值的指针
+	}
+	// 调用函数并打印执行结果
+	if ftype.IsVariadic() {
+		fmt.Println(f.CallSlice(parameters))
+	} else {
+		fmt.Println(f.Call(parameters))
+	}
+}
+
+func main() {
+	vars := make([]interface{}, 0, 20)
+
+	var funcs []func() = make([]func(), 0)
+	funcs = append(funcs, func() { fmt.Println(1) }, func() { fmt.Println(2) }, func() { fmt.Println(3) })
+
+	var funcV1 func(...interface{}) error = func(x ...interface{}) error { fmt.Println(x...); return nil }
+	var funcV2 func(string, int) *Connection = NewConnection
+	var userV *User = NewUser(1, "kk", "15200000000", 1.68, "少年经不得顺境，中年经不得闲境，晚年经不得逆境", 72)
+
+	vars = append(vars, funcs, funcV1, funcV2, *userV, userV)
+	for _, v := range vars {
+		callValue(reflect.ValueOf(v))
+	}
+}
+
+
+
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+----------------------------- []func()
+----------------------------- func()
+func()
+1
+[]
+----------------------------- func()
+func()
+2
+[]
+----------------------------- func()
+func()
+3
+[]
+----------------------------- func(...interface {}) error
+func(...interface {}) error
+
+[]reflect.Value{reflect.Value{typ:(*reflect.rtype)(0x4f2f80), ptr:(unsafe.Pointer)(0xc000070528), flag:0x94}}----------------------------- func(string, int) *main.Connection
+func(string, int) *main.Connection
+[<*main.Connection Value>]
+----------------------------- main.User
+method: User.GetId => func() int
+[<int Value>]
+method: User.SetId => func(int)
+[]
+method: User.String => func() string
+[User{id: 1, name: kk, tel: 15200000000, height: 1.680000e+00, desc: 少年经不得顺境，中年经不得闲境，晚年经不得逆境, weight: 72}]
+----------------------------- *main.User
+method: User.GetId => func() int
+[<int Value>]
+method: User.GetName => func() string
+[kk]
+method: User.SetId => func(int)
+[]
+method: User.SetName => func(string)
+[]
+method: User.String => func() string
+[User{id: 1, name: , tel: 15200000000, height: 1.680000e+00, desc: 少年经不得顺境，中年经不得闲境，晚年经不得逆境, weight: 72}]
+
+```
+
+### 动态创建结构体
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+// 定义User结构体，并为每个属性定义标签
+
+type User struct {
+	id     int     `json:"id"`
+	name   string  `json:"name"`
+	Tel    string  `json:"addr"`
+	Height float32 `json:"height"`
+	Desc   *string `json:"desc"`
+	Weight *int    `json:"weight"`
+}
+
+func NewUser(id int, name string, tel string, height float32, desc string, weight int) *User {
+	return &User{id, name, tel, height, &desc, &weight}
+}
+
+// 定义String方法
+func (user User) String() string {
+	return fmt.Sprintf("User{id: %d, name: %s, tel: %s, height: %e, desc: %s, weight: %d}", user.id, user.name, user.Tel, user.Height, *user.Desc, *user.Weight)
+}
+
+func (user User) GetId() int {
+	return user.id
+}
+
+func (user User) SetId(id int) {
+	user.id = id
+}
+
+func (user *User) GetName() string {
+	return user.name
+}
+
+func (user *User) SetName(name string) {
+	user.name = name
+}
+
+// 定义接口Closer
+type Closer interface {
+	Close() error
+}
+
+type Address struct {
+	ip   string "json:ip"
+	port int    "json:port"
+}
+
+func (address Address) GetIp() string {
+	return address.ip
+
+}
+
+func (address Address) GetPort() int {
+	return address.port
+}
+
+type Connection struct {
+	Address
+	status int
+}
+
+func NewConnection(ip string, port int) *Connection {
+	return &Connection{Address: Address{ip, port}}
+}
+
+func (conn *Connection) Send(msg string) error {
+	fmt.Printf("发送消息给[%s:%d]:%s", conn.ip, conn.port, msg)
+	return nil
+}
+
+func (conn *Connection) Close() error {
+	fmt.Printf("关闭连接[%s:%d]", conn.ip, conn.port)
+	return nil
+}
+
+// 调用函数
+func callFunc(f reflect.Value) {
+	// 获取函数类型并打印
+	ftype := f.Type()
+	fmt.Printf("%s\n", ftype.String())
+
+	// 组装函数参数
+	parameters := make([]reflect.Value, 0)
+	for i := 0; i < ftype.NumIn(); i++ {
+		parameters = append(parameters, reflect.Zero(ftype.In(i))) // 通过reflect.Zero创建参数同类型零值
+
+	}
+
+	// 调用函数并打印执行结果
+	if ftype.IsVariadic() {
+		fmt.Printf("%#v", f.CallSlice(parameters))
+
+	} else {
+		fmt.Println(f.Call(parameters))
+	}
+}
+
+// 调用方法
+func callMethod(f reflect.Value, t reflect.Type, m reflect.Method) {
+	// 获取函数类型并打印
+	ftype := f.Type()
+	fmt.Printf("method: %s.%s => %s\n", t.Name(), m.Name, ftype.String())
+
+	// 组装函数参数
+	parameters := make([]reflect.Value, 0)
+	for i := 0; i < ftype.NumIn(); i++ {
+		parameters = append(parameters, reflect.New(ftype.In(i)).Elem()) // 通过reflect.New创建参数同类型零值的指针
+	}
+	// 调用函数并打印执行结果
+	if ftype.IsVariadic() {
+		fmt.Println(f.CallSlice(parameters))
+	} else {
+		fmt.Println(f.Call(parameters))
+	}
+}
+
+func main() {
+	// 定义结构体属性
+	fields := []reflect.StructField{
+		{
+			Name: "Name",
+			Type: reflect.TypeOf(""),
+		},
+		{
+			Name: "Score",
+			Type: reflect.TypeOf(int64(0)),
+		},
+	}
+	// 定义结构体类型
+	UserType := reflect.StructOf(fields)
+
+	// 创建结构体对象
+	user := reflect.New(UserType).Elem()
+
+	// 设置属性值
+	user.Field(0).Set(reflect.ValueOf("Silence"))
+	user.Field(1).Set(reflect.ValueOf(int64(10000)))
+
+	// 打印对象和对象指针
+	fmt.Printf("%#v\n", user.Interface())
+	fmt.Printf("%#v\n", user.Addr().Interface())
+}
+
+
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+struct { Name string; Score int64 }{Name:"Silence", Score:10000}
+&struct { Name string; Score int64 }{Name:"Silence", Score:10000}
+```
 
 
 
@@ -9026,25 +9979,1154 @@ func main() {
 
 
 
+动态创建函数并调用
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+// 定义User结构体，并为每个属性定义标签
+
+type User struct {
+	id     int     `json:"id"`
+	name   string  `json:"name"`
+	Tel    string  `json:"addr"`
+	Height float32 `json:"height"`
+	Desc   *string `json:"desc"`
+	Weight *int    `json:"weight"`
+}
+
+func NewUser(id int, name string, tel string, height float32, desc string, weight int) *User {
+	return &User{id, name, tel, height, &desc, &weight}
+}
+
+// 定义String方法
+func (user User) String() string {
+	return fmt.Sprintf("User{id: %d, name: %s, tel: %s, height: %e, desc: %s, weight: %d}", user.id, user.name, user.Tel, user.Height, *user.Desc, *user.Weight)
+}
+
+func (user User) GetId() int {
+	return user.id
+}
+
+func (user User) SetId(id int) {
+	user.id = id
+}
+
+func (user *User) GetName() string {
+	return user.name
+}
+
+func (user *User) SetName(name string) {
+	user.name = name
+}
+
+// 定义接口Closer
+type Closer interface {
+	Close() error
+}
+
+type Address struct {
+	ip   string "json:ip"
+	port int    "json:port"
+}
+
+func (address Address) GetIp() string {
+	return address.ip
+
+}
+
+func (address Address) GetPort() int {
+	return address.port
+}
+
+type Connection struct {
+	Address
+	status int
+}
+
+func NewConnection(ip string, port int) *Connection {
+	return &Connection{Address: Address{ip, port}}
+}
+
+func (conn *Connection) Send(msg string) error {
+	fmt.Printf("发送消息给[%s:%d]:%s", conn.ip, conn.port, msg)
+	return nil
+}
+
+func (conn *Connection) Close() error {
+	fmt.Printf("关闭连接[%s:%d]", conn.ip, conn.port)
+	return nil
+}
+
+
+// 定义func用于求和
+sum := func(parameters []reflect.Value) []reflect.Value {
+	// 若函数为不可变参数函数，则函数所有参数都包含在parameters中
+	// 若函数为可变参数函数，则parameters最后一个元素为切片类型，包含调用函数传递的为对应的所有参数
+	var total int64
+	// 将前N-1个元素进行相加
+	for _, parameter := range parameters[:len(parameters)-1] {
+		total += parameter.Int()
+	}
+
+	// 对最后一个参数进行特殊处理
+	last := parameter[len(parameters)-1]
+	switch last.Kind() {
+	case reflect.Int:
+		total += last.Int()
+	case reflect.Slice:
+		// 若为切片，则为可变参数函数调用，遍历切片中元素进行求和
+		for i := 0; i < last.Len(); i++ {
+			total += last.Index(i).Int()
+		}
+	}
+
+	// 返回包含总和初始化的value切片，切片元素数量对应函数返回值数量
+	return []reflect.Value{reflect.ValueOf(total)}
+
+}
+// 定义函数变量add2
+var add2 func(int, int) int64
+
+ref := reflect.ValueOf(&add2).Elem() // 获取add2的引用
+fv  := refalect.MakeFunc(ref.Type(), sum) // 创建add2的函数值
+ref.Set(fv) // 通过add2的引导设置函数值
+
+// 调用add2 函数并打印结果
+fmt.Println(add2(1, 2))
+
+// 定义匿名函数用于将函数类型变量进行初始化
+// 参数为函数类型变量的指针
+makeFunc := func(fn interface{}) {
+	ref := reflect.ValueOf(fn).Elem()   // fn的引用
+	fv  := reflect.MakeFunc(ref.Type(), sum) // 根据fn的类型定义函数值
+	ref.Set(fv)
+}
+
+// 定义函数变量
+var add3 func(int, int, int) int64
+var add4 func(int, int, int, int) int64
+
+// 通过引用设置函数变量值
+makeFunc(&add3)
+makeFunc(&add4)
+
+// 调用函数
+fmt.Println(add3(1, 2, 3))
+fmt.Println(add4(1, 2, 3, 4))
+
+// 定义可变参数类型函数
+var add func(int, int, ...int) int64
+
+// 通过引用设置函数变量值
+makeFunc(&add)
+
+// 调用函数
+fmt.Println(add(3, 4))
+fmt.Println(add(3, 4, 5))
+
+
+func main() {
+	// 定义结构体属性
+	fields := []reflect.StructField{
+		{
+			Name: "Name",
+			Type: reflect.TypeOf(""),
+		},
+		{
+			Name: "Score",
+			Type: reflect.TypeOf(int64(0)),
+		},
+	}
+	// 定义结构体类型
+	UserType := reflect.StructOf(fields)
+
+	// 创建结构体对象
+	user := reflect.New(UserType).Elem()
+
+	// 设置属性值
+	user.Field(0).Set(reflect.ValueOf("Silence"))
+	user.Field(1).Set(reflect.ValueOf(int64(10000)))
+
+	// 打印对象和对象指针
+	fmt.Printf("%#v\n", user.Interface())
+	fmt.Printf("%#v\n", user.Addr().Interface())
+}
 
 
 
 
 
+-------------------
+测试失败
+```
+
+
+
+
+## 应用 
+
+反射常用在动态处理所有数据类型(json/xml 序列化和反序列化, orm 等)或调用所有函数(路由函数调用)的场景。
+
+### encoding/json
+
+1. 介绍
+
+在内存数据进行持久化存储或网络交换时常可采用 json 格式字符串，go 语言提供 json包进行 json 序列化和反序列化。
+
+对于 Go 提供的基本类型和符合类型可以直接使用 json 包进行序列化和反序列化操作，针对结构体可通过标签声明属性和 json 字符串的转换关系，标签名为 json，常用格式为：
+
+- json: 
+  - 默认形式，可省略，json键名使用属性名，类型通过属性对应的类型
+- json:"key"
+  - json 键名使用指定名称 key
+- json:"-"
+  - 忽略该属性
+- json:"key,type"
+  - json 键名使用指定名称 key，类型使用指定类型 type
+- json:"key,omitempty"
+  - json 键名使用指定名称 key，当值为零值时省略该属性
+- json:"key,type,omitempty"
+  - json 键名使用指定名称 key，类型使用指定类型 type，当值为零值时省略该属性
+- json:",type"
+  - 类型使用指定类型 type
+- json:",omitempty"
+  - 值为零值时省略该属性
+
+```go
+type User struct {
+	ID           int       `json: `                             // json键使用属性名ID
+	Name         string    `json: "name"`                       // json键重命名为name
+	Password     string    `json: "-"`                          // json 序列化忽略该字段
+	gender       bool      `json: "gender"`                     // 非公开字段不进行序列化
+	Online       bool      `json: "is_online,string,omitempty"` // json键重命名为is_online,并设置值类型为string
+	RegisterTime time.time `json: "register_time"`              // json键重命名为register_time
+	Status       int       `json: ",omitempty"`                 // json键使用属性名Status, 当为0值时不进行序列化
+
+}
+
+```
+
+2. 数据初始化 
+
+```go
+// 定义用户类型容器(切片和映射)
+users_slice := make([]User, 10, 20)
+users_map  := make(map[int]User)
+
+// 初始化切片和映射
+
+for i := 0; i < 10; i++ {
+	u := User{
+		ID: 1,
+		Name: fmt.Sprintf("user.%d", i), 
+		Password: fmt.Sprintf("password.%d", i)
+		gender: i%2 == 0,
+		Online: i%3 == 0,
+		RegisterTime: time.Now(),
+		Status: i % 5,
+	}
+	users_slice[i] = u
+	users_map[i] = u
+}
+
+
+// 定义json格式字符串
+jsonStr := `
+[
+	{
+		"ID": 0, 
+		"Name": "slience", 
+		"Password": "test@123", 
+		"is_online": "true", 
+		"register_time": "2019-04-19T14:34:41.5234523+08:00"
+	},
+	{
+		"ID": 1, 
+		"Name": "kk", 
+		"is_online": "false", 
+		"register_time": "2019-04-19T14:34:41.5200023+08:00"
+		"status": 1
+	}
+]`
+```
+
+3. 常用函数
+1) Marshal: 用于将 go 语言的数据序列化为 json 字符串
+2) Indent: 将 json 字符串进行格式化
+
+```go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"os"
+	"time"
+)
+
+// 定义User结构体，并使用标签声明json属性
+
+type User struct {
+	ID           int       `json: `                             // json键使用属性名ID
+	Name         string    `json: "name"`                       // json键重命名为name
+	Password     string    `json: "-"`                          // json 序列化忽略该字段
+	gender       bool      `json: "gender"`                     // 非公开字段不进行序列化
+	Online       bool      `json: "is_online,string,omitempty"` // json键重命名为is_online,并设置值类型为string
+	RegisterTime time.Time `json: "register_time"`              // json键重命名为register_time
+	Status       int       `json: ",omitempty"`                 // json键使用属性名Status, 当为0值时不进行序列化
+
+}
+
+func main() {
+
+	// 定义用户类型容器(切片和映射)
+	users_slice := make([]User, 10, 20)
+	users_map := make(map[int]User)
+
+	// 初始化切片和映射
+
+	for i := 0; i < 10; i++ {
+		u := User{
+			ID:           1,
+			Name:         fmt.Sprintf("user.%d", i),
+			Password:     fmt.Sprintf("password.%d", i),
+			gender:       i%2 == 0,
+			Online:       i%3 == 0,
+			RegisterTime: time.Now(),
+			Status:       i % 5,
+		}
+		users_slice[i] = u
+		users_map[i] = u
+	}
+
+	// 对切片进行json序列化
+	b, err := json.Marshal(users_slice)
+	if err == nil {
+		fmt.Println(string(b))
+		// 将json 字符串格式化并输出到bytes.Buffer变量中
+		var buffer bytes.Buffer
+		json.Indent(&buffer, b, "", "\t")
+		buffer.WriteTo(os.Stdout)
+	}
+}
+
+
+
+
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+[{"ID":1,"Name":"user.0","Password":"password.0","Online":true,"RegisterTime":"2020-10-15T19:16:42.6813396+08:00","Status":0},{"ID":1,"Name":"user.1","Password":"password.1","Online":false,"RegisterTime":"2020-10-15T19:16:42.6813396+08:00","Status":1},{"ID":1,"Name":"user.2","Password":"password.2","Online":false,"RegisterTime":"2020-10-15T19:16:42.6813396+08:00","Status":2},{"ID":1,"Name":"user.3","Password":"password.3","Online":true,"RegisterTime":"2020-10-15T19:16:42.6813396+08:00","Status":3},{"ID":1,"Name":"user.4","Password":"password.4","Online":false,"RegisterTime":"2020-10-15T19:16:42.6813396+08:00","Status":4},{"ID":1,"Name":"user.5","Password":"password.5","Online":false,"RegisterTime":"2020-10-15T19:16:42.6813396+08:00","Status":0},{"ID":1,"Name":"user.6","Password":"password.6","Online":true,"RegisterTime":"2020-10-15T19:16:42.6813396+08:00","Status":1},{"ID":1,"Name":"user.7","Password":"password.7","Online":false,"RegisterTime":"2020-10-15T19:16:42.6813396+08:00","Status":2},{"ID":1,"Name":"user.8","Password":"password.8","Online":false,"RegisterTime":"2020-10-15T19:16:42.6813396+08:00","Status":3},{"ID":1,"Name":"user.9","Password":"password.9","Online":true,"RegisterTime":"2020-10-15T19:16:42.6813396+08:00","Status":4}]
+[
+        {
+                "ID": 1,
+                "Name": "user.0",
+                "Password": "password.0",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:16:42.6813396+08:00",
+                "Status": 0
+        },
+        {
+                "ID": 1,
+                "Name": "user.1",
+                "Password": "password.1",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:16:42.6813396+08:00",
+                "Status": 1
+        },
+        {
+                "ID": 1,
+                "Name": "user.2",
+                "Password": "password.2",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:16:42.6813396+08:00",
+                "Status": 2
+        },
+        {
+                "ID": 1,
+                "Name": "user.3",
+                "Password": "password.3",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:16:42.6813396+08:00",
+                "Status": 3
+        },
+        {
+                "ID": 1,
+                "Name": "user.4",
+                "Password": "password.4",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:16:42.6813396+08:00",
+                "Status": 4
+        },
+        {
+                "ID": 1,
+                "Name": "user.5",
+                "Password": "password.5",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:16:42.6813396+08:00",
+                "Status": 0
+        },
+        {
+                "ID": 1,
+                "Name": "user.6",
+                "Password": "password.6",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:16:42.6813396+08:00",
+                "Status": 1
+        },
+        {
+                "ID": 1,
+                "Name": "user.7",
+                "Password": "password.7",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:16:42.6813396+08:00",
+                "Status": 2
+        },
+        {
+                "ID": 1,
+                "Name": "user.8",
+                "Password": "password.8",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:16:42.6813396+08:00",
+                "Status": 3
+        },
+        {
+                "ID": 1,
+                "Name": "user.9",
+                "Password": "password.9",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:16:42.6813396+08:00",
+                "Status": 4
+        }
+]
+```
+
+
+3) UnMarshal: 用于json字符串反序列化为go语言的数据
+
+```go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"os"
+	"time"
+)
+
+// 定义User结构体，并使用标签声明json属性
+
+type User struct {
+	ID           int       `json: `                             // json键使用属性名ID
+	Name         string    `json: "name"`                       // json键重命名为name
+	Password     string    `json: "-"`                          // json 序列化忽略该字段
+	gender       bool      `json: "gender"`                     // 非公开字段不进行序列化
+	Online       bool      `json: "is_online,string,omitempty"` // json键重命名为is_online,并设置值类型为string
+	RegisterTime time.Time `json: "register_time"`              // json键重命名为register_time
+	Status       int       `json: ",omitempty"`                 // json键使用属性名Status, 当为0值时不进行序列化
+
+}
+
+func main() {
+
+	// 定义用户类型容器(切片和映射)
+	users_slice := make([]User, 10, 20)
+	users_map := make(map[int]User)
+
+	// 初始化切片和映射
+
+	for i := 0; i < 10; i++ {
+		u := User{
+			ID:           1,
+			Name:         fmt.Sprintf("user.%d", i),
+			Password:     fmt.Sprintf("password.%d", i),
+			gender:       i%2 == 0,
+			Online:       i%3 == 0,
+			RegisterTime: time.Now(),
+			Status:       i % 5,
+		}
+		users_slice[i] = u
+		users_map[i] = u
+	}
+
+	// 定义json格式字符串
+	jsonStr := `
+	[
+	{
+		"ID": 0,
+		"Name": "slience",
+		"Password": "test@123",
+		"is_online": "true",
+		"register_time": "2019-04-19T14:34:41.5234523+08:00"
+	},
+	{
+		"ID": 1,
+		"Name": "kk",
+		"is_online": "false",
+		"register_time": "2019-04-19T14:34:41.5200023+08:00"
+		"status": 1
+	}
+	]
+	`
+
+	// 对切片进行json序列化
+	b, err := json.Marshal(users_slice)
+	if err == nil {
+		fmt.Println(string(b))
+		// 将json 字符串格式化并输出到bytes.Buffer变量中
+		var buffer bytes.Buffer
+		json.Indent(&buffer, b, "", "\t")
+		buffer.WriteTo(os.Stdout)
+	}
+
+	// 将json 字符串进行反序列化到切片对象中
+	var users []User
+	err = json.Unmarshal([]byte(jsonStr), &users)
+	if err == nil {
+		fmt.Println(users)
+	}
+}
 
 
 
 
 
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+[{"ID":1,"Name":"user.0","Password":"password.0","Online":true,"RegisterTime":"2020-10-15T19:20:28.6491651+08:00","Status":0},{"ID":1,"Name":"user.1","Password":"password.1","Online":false,"RegisterTime":"2020-10-15T19:20:28.6491651+08:00","Status":1},{"ID":1,"Name":"user.2","Password":"password.2","Online":false,"RegisterTime":"2020-10-15T19:20:28.6491651+08:00","Status":2},{"ID":1,"Name":"user.3","Password":"password.3","Online":true,"RegisterTime":"2020-10-15T19:20:28.6491651+08:00","Status":3},{"ID":1,"Name":"user.4","Password":"password.4","Online":false,"RegisterTime":"2020-10-15T19:20:28.6491651+08:00","Status":4},{"ID":1,"Name":"user.5","Password":"password.5","Online":false,"RegisterTime":"2020-10-15T19:20:28.6491651+08:00","Status":0},{"ID":1,"Name":"user.6","Password":"password.6","Online":true,"RegisterTime":"2020-10-15T19:20:28.6491651+08:00","Status":1},{"ID":1,"Name":"user.7","Password":"password.7","Online":false,"RegisterTime":"2020-10-15T19:20:28.6491651+08:00","Status":2},{"ID":1,"Name":"user.8","Password":"password.8","Online":false,"RegisterTime":"2020-10-15T19:20:28.6491651+08:00","Status":3},{"ID":1,"Name":"user.9","Password":"password.9","Online":true,"RegisterTime":"2020-10-15T19:20:28.6491651+08:00","Status":4}]
+[
+        {
+                "ID": 1,
+                "Name": "user.0",
+                "Password": "password.0",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:20:28.6491651+08:00",
+                "Status": 0
+        },
+        {
+                "ID": 1,
+                "Name": "user.1",
+                "Password": "password.1",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:20:28.6491651+08:00",
+                "Status": 1
+        },
+        {
+                "ID": 1,
+                "Name": "user.2",
+                "Password": "password.2",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:20:28.6491651+08:00",
+                "Status": 2
+        },
+        {
+                "ID": 1,
+                "Name": "user.3",
+                "Password": "password.3",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:20:28.6491651+08:00",
+                "Status": 3
+        },
+        {
+                "ID": 1,
+                "Name": "user.4",
+                "Password": "password.4",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:20:28.6491651+08:00",
+                "Status": 4
+        },
+        {
+                "ID": 1,
+                "Name": "user.5",
+                "Password": "password.5",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:20:28.6491651+08:00",
+                "Status": 0
+        },
+        {
+                "ID": 1,
+                "Name": "user.6",
+                "Password": "password.6",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:20:28.6491651+08:00",
+                "Status": 1
+        },
+        {
+                "ID": 1,
+                "Name": "user.7",
+                "Password": "password.7",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:20:28.6491651+08:00",
+                "Status": 2
+        },
+        {
+                "ID": 1,
+                "Name": "user.8",
+                "Password": "password.8",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:20:28.6491651+08:00",
+                "Status": 3
+        },
+        {
+                "ID": 1,
+                "Name": "user.9",
+                "Password": "password.9",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:20:28.6491651+08:00",
+                "Status": 4
+        }
+]
+```
+
+
+4) MarshalIndent: 用于将go 语言的数据序列化为为格式化的json 字符串 
+
+```go
+	// 对映射进行json序列化(并进行格式化)
+	b, err = json.MarshalIndent(users_map, "", "\t")
+	if err == nil {
+		fmt.Println(string(b))
+	}
+```
+
+5) Valid: 验证是否为正确json 字符串 
+
+```go
+	// 验证是否为正确的json字符串
+	fmt.Println(json.Valid([]byte("1")))
+	fmt.Println(json.Valid([]byte("true")))
+	fmt.Println(json.Valid([]byte("1.1")))
+	fmt.Println(json.Valid([]byte(`{}`)))
+	fmt.Println(json.Valid([]byte(`[]`)))
+	fmt.Println(json.Valid([]byte(`[{}, {}]`)))
+	fmt.Println(json.Valid([]byte(`{"name" : "kk"}`)))
+	fmt.Println(json.Valid([]byte(`{"name": kk}`)))     // json格式字符串需要使用"双引号包含
+	fmt.Println(json.Valid([]byte(`{"name" : "kk",}`))) // json格式最后一个字段后不许有,
+```
+
+
+汇总测试
+
+```go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"os"
+	"time"
+)
+
+// 定义User结构体，并使用标签声明json属性
+
+type User struct {
+	ID           int       `json: `                             // json键使用属性名ID
+	Name         string    `json: "name"`                       // json键重命名为name
+	Password     string    `json: "-"`                          // json 序列化忽略该字段
+	gender       bool      `json: "gender"`                     // 非公开字段不进行序列化
+	Online       bool      `json: "is_online,string,omitempty"` // json键重命名为is_online,并设置值类型为string
+	RegisterTime time.Time `json: "register_time"`              // json键重命名为register_time
+	Status       int       `json: ",omitempty"`                 // json键使用属性名Status, 当为0值时不进行序列化
+
+}
+
+func main() {
+
+	// 定义用户类型容器(切片和映射)
+	users_slice := make([]User, 10, 20)
+	users_map := make(map[int]User)
+
+	// 初始化切片和映射
+
+	for i := 0; i < 10; i++ {
+		u := User{
+			ID:           1,
+			Name:         fmt.Sprintf("user.%d", i),
+			Password:     fmt.Sprintf("password.%d", i),
+			gender:       i%2 == 0,
+			Online:       i%3 == 0,
+			RegisterTime: time.Now(),
+			Status:       i % 5,
+		}
+		users_slice[i] = u
+		users_map[i] = u
+	}
+
+	// 定义json格式字符串
+	jsonStr := `
+	[
+	{
+		"ID": 0,
+		"Name": "slience",
+		"Password": "test@123",
+		"is_online": "true",
+		"register_time": "2019-04-19T14:34:41.5234523+08:00"
+	},
+	{
+		"ID": 1,
+		"Name": "kk",
+		"is_online": "false",
+		"register_time": "2019-04-19T14:34:41.5200023+08:00"
+		"status": 1
+	}
+	]
+	`
+
+	// 对切片进行json序列化
+	b, err := json.Marshal(users_slice)
+	if err == nil {
+		fmt.Println(string(b))
+		// 将json 字符串格式化并输出到bytes.Buffer变量中
+		var buffer bytes.Buffer
+		json.Indent(&buffer, b, "", "\t")
+		buffer.WriteTo(os.Stdout)
+	}
+
+	// 将json 字符串进行反序列化到切片对象中
+	var users []User
+	err = json.Unmarshal([]byte(jsonStr), &users)
+	if err == nil {
+		fmt.Println(users)
+	}
+
+	// 对映射进行json序列化(并进行格式化)
+	b, err = json.MarshalIndent(users_map, "", "\t")
+	if err == nil {
+		fmt.Println(string(b))
+	}
+
+	// 验证是否为正确的json字符串
+	fmt.Println(json.Valid([]byte("1")))
+	fmt.Println(json.Valid([]byte("true")))
+	fmt.Println(json.Valid([]byte("1.1")))
+	fmt.Println(json.Valid([]byte(`{}`)))
+	fmt.Println(json.Valid([]byte(`[]`)))
+	fmt.Println(json.Valid([]byte(`[{}, {}]`)))
+	fmt.Println(json.Valid([]byte(`{"name" : "kk"}`)))
+	fmt.Println(json.Valid([]byte(`{"name": kk}`)))     // json格式字符串需要使用"双引号包含
+	fmt.Println(json.Valid([]byte(`{"name" : "kk",}`))) // json格式最后一个字段后不许有,
+}
 
 
 
+PS E:\go-phase-two\go-course> go run E:\go-phase-two\go-course\1test.go
+[{"ID":1,"Name":"user.0","Password":"password.0","Online":true,"RegisterTime":"2020-10-15T19:34:58.9365118+08:00","Status":0},{"ID":1,"Name":"user.1","Password":"password.1","Online":false,"RegisterTime":"2020-10-15T19:34:58.9365118+08:00","Status":1},{"ID":1,"Name":"user.2","Password":"password.2","Online":false,"RegisterTime":"2020-10-15T19:34:58.9365118+08:00","Status":2},{"ID":1,"Name":"user.3","Password":"password.3","Online":true,"RegisterTime":"2020-10-15T19:34:58.9365118+08:00","Status":3},{"ID":1,"Name":"user.4","Password":"password.4","Online":false,"RegisterTime":"2020-10-15T19:34:58.9365118+08:00","Status":4},{"ID":1,"Name":"user.5","Password":"password.5","Online":false,"RegisterTime":"2020-10-15T19:34:58.9365118+08:00","Status":0},{"ID":1,"Name":"user.6","Password":"password.6","Online":true,"RegisterTime":"2020-10-15T19:34:58.9365118+08:00","Status":1},{"ID":1,"Name":"user.7","Password":"password.7","Online":false,"RegisterTime":"2020-10-15T19:34:58.9365118+08:00","Status":2},{"ID":1,"Name":"user.8","Password":"password.8","Online":false,"RegisterTime":"2020-10-15T19:34:58.9365118+08:00","Status":3},{"ID":1,"Name":"user.9","Password":"password.9","Online":true,"RegisterTime":"2020-10-15T19:34:58.9365118+08:00","Status":4}]
+[
+        {
+                "ID": 1,
+                "Name": "user.0",
+                "Password": "password.0",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 0
+        },
+        {
+                "ID": 1,
+                "Name": "user.1",
+                "Password": "password.1",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 1
+        },
+        {
+                "ID": 1,
+                "Name": "user.2",
+                "Password": "password.2",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 2
+        },
+        {
+                "ID": 1,
+                "Name": "user.3",
+                "Password": "password.3",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 3
+        },
+        {
+                "ID": 1,
+                "Name": "user.4",
+                "Password": "password.4",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 4
+        },
+        {
+                "ID": 1,
+                "Name": "user.5",
+                "Password": "password.5",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 0
+        },
+        {
+                "ID": 1,
+                "Name": "user.6",
+                "Password": "password.6",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 1
+        },
+        {
+                "ID": 1,
+                "Name": "user.7",
+                "Password": "password.7",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 2
+        },
+        {
+                "ID": 1,
+                "Name": "user.8",
+                "Password": "password.8",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 3
+        },
+        {
+                "ID": 1,
+                "Name": "user.9",
+                "Password": "password.9",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 4
+        }
+]{
+        "0": {
+                "ID": 1,
+                "Name": "user.0",
+                "Password": "password.0",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 0
+        },
+        "1": {
+                "ID": 1,
+                "Name": "user.1",
+                "Password": "password.1",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 1
+        },
+        "2": {
+                "ID": 1,
+                "Name": "user.2",
+                "Password": "password.2",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 2
+        },
+        "3": {
+                "ID": 1,
+                "Name": "user.3",
+                "Password": "password.3",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 3
+        },
+        "4": {
+                "ID": 1,
+                "Name": "user.4",
+                "Password": "password.4",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 4
+        },
+        "5": {
+                "ID": 1,
+                "Name": "user.5",
+                "Password": "password.5",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 0
+        },
+        "6": {
+                "ID": 1,
+                "Name": "user.6",
+                "Password": "password.6",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 1
+        },
+        "7": {
+                "ID": 1,
+                "Name": "user.7",
+                "Password": "password.7",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 2
+        },
+        "8": {
+                "ID": 1,
+                "Name": "user.8",
+                "Password": "password.8",
+                "Online": false,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 3
+        },
+        "9": {
+                "ID": 1,
+                "Name": "user.9",
+                "Password": "password.9",
+                "Online": true,
+                "RegisterTime": "2020-10-15T19:34:58.9365118+08:00",
+                "Status": 4
+        }
+}
+true
+true
+true
+true
+true
+true
+true
+false
+false
+```
+
+4. Encoder 与 Decoder 
+
+Encoder 和 Decoder 是构建在流之上进行Json 序列化和反序列化，构造函数分别为NewEncoder和NewDecoder， 参数要求分别实现接口io.Writer 和 io.Reader的对象
+
+1) Encoder.Encode 序列化
+
+
+```go
+
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"os"
+	"time"
+)
+
+// 定义User结构体，并使用标签声明json属性
+
+type User struct {
+	ID           int       `json: `                             // json键使用属性名ID
+	Name         string    `json: "name"`                       // json键重命名为name
+	Password     string    `json: "-"`                          // json 序列化忽略该字段
+	gender       bool      `json: "gender"`                     // 非公开字段不进行序列化
+	Online       bool      `json: "is_online,string,omitempty"` // json键重命名为is_online,并设置值类型为string
+	RegisterTime time.Time `json: "register_time"`              // json键重命名为register_time
+	Status       int       `json: ",omitempty"`                 // json键使用属性名Status, 当为0值时不进行序列化
+
+}
+
+func main() {
+
+	// 定义用户类型容器(切片和映射)
+	users_slice := make([]User, 10, 20)
+	users_map := make(map[int]User)
+
+	// 初始化切片和映射
+
+	for i := 0; i < 10; i++ {
+		u := User{
+			ID:           1,
+			Name:         fmt.Sprintf("user.%d", i),
+			Password:     fmt.Sprintf("password.%d", i),
+			gender:       i%2 == 0,
+			Online:       i%3 == 0,
+			RegisterTime: time.Now(),
+			Status:       i % 5,
+		}
+		users_slice[i] = u
+		users_map[i] = u
+	}
+
+	// 定义json格式字符串
+	jsonStr := `
+	[
+	{
+		"ID": 0,
+		"Name": "slience",
+		"Password": "test@123",
+		"is_online": "true",
+		"register_time": "2019-04-19T14:34:41.5234523+08:00"
+	},
+	{
+		"ID": 1,
+		"Name": "kk",
+		"is_online": "false",
+		"register_time": "2019-04-19T14:34:41.5200023+08:00"
+		"status": 1
+	}
+	]
+	`
+
+	// 对切片进行json序列化
+	b, err := json.Marshal(users_slice)
+	if err == nil {
+		fmt.Println(string(b))
+		// 将json 字符串格式化并输出到bytes.Buffer变量中
+		var buffer bytes.Buffer
+		json.Indent(&buffer, b, "", "\t")
+		buffer.WriteTo(os.Stdout)
+	}
+
+	// 将json 字符串进行反序列化到切片对象中
+	var users []User
+	err = json.Unmarshal([]byte(jsonStr), &users)
+	if err == nil {
+		fmt.Println(users)
+	}
+
+	// 对映射进行json序列化(并进行格式化)
+	b, err = json.MarshalIndent(users_map, "", "\t")
+	if err == nil {
+		fmt.Println(string(b))
+	}
+
+	// 验证是否为正确的json字符串
+	fmt.Println(json.Valid([]byte("1")))
+	fmt.Println(json.Valid([]byte("true")))
+	fmt.Println(json.Valid([]byte("1.1")))
+	fmt.Println(json.Valid([]byte(`{}`)))
+	fmt.Println(json.Valid([]byte(`[]`)))
+	fmt.Println(json.Valid([]byte(`[{}, {}]`)))
+	fmt.Println(json.Valid([]byte(`{"name" : "kk"}`)))
+	fmt.Println(json.Valid([]byte(`{"name": kk}`)))     // json格式字符串需要使用"双引号包含
+	fmt.Println(json.Valid([]byte(`{"name" : "kk",}`))) // json格式最后一个字段后不许有,
+
+	// 使用Encoder将json 结果输出到标准输出
+	encoder := json.NewDecoder(os.Stdout)
+	encoder.SetIndent("", "\t")
+	err = encoder.Encode(users_slice)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// 使用Encoder将序列化结构输出到bytes.Buffer/strings.Builder
+	var out byte.Buffer
+	// var out strings.Buffer
+
+	encoder = json.NewDecoder(&out)
+	err = encoder.Encode(users_map)
+	if err == nil {
+		fmt.Println(out.String())
+	} else {
+		fmt.Println(err)
+	}
+}
+
+
+测试失败
+
+```
 
 
 
+2) Decoder.Decode 反序列化
+
+```go
+	// 使用Decoder 从bytes.Buffer或strings.Reader中读取结果并反序列化
+
+	// 将json 字符串写入到bytes.Buffer中供Decoder读取
+	in := bytes.NewBufferString(jsonStr)
+	// 将json 字符串写入到strings.Reader中供Decoder读取
+	// in := strings.NewReader(jsonStr)
+
+	var users2 []User
+	decoder := json.NewDecoder(in)
+	err = decoder.Decode(&users2)
+	if err == nil {
+		fmt.Println(users2)
+	} else {
+		fmt.Println(err)
+	}
+
+```
 
 
+## encodeing/xml 
+
+1) 介绍
+go 语言提供 xml 包进行 xml 序列化和反序列化
+在进行 xml 序列化和反序列化时，必须定义根结构体对应 xml 的根节点，并可通过结构体中 xml.Name 类型且名称为 XMLName 属性来定义根节点，可通过各属性的标签声明属性和 xml 节点的转换关系，标签名为 xml，常用格式为：
+- xml:
+  - 默认形式，可省略，xml 节点使用结构体属性名
+- xml:"name"
+  - xml 节点名使用指定的名称 name
+-  xml:"-"
+   - 忽略该属性
+-  xml:"name,attr"
+   - 表示该属性为节点的属性值，属性名使用指定名称 name
+-  xml:",attr"
+   - 表示为节点的属性值，属性名为结构体属性名
+-  xml:"name,omitempty"
+   - xml 节点名使用指定的名称 name，当值为零值时省略该属性
+-  xml:",omitempty"
+   - 值为零值时省略该属性
+-  xml:", chardata"
+   - 表示为文本
+-  xml:",cdata"
+   - 表示使用 CDATA 包含
+-  xml:",comment"
+   - 表示为注释内容
+-  xml:", innerxml"
+   - 表示为数据不进行实体编码
+-  xml:"A>B>C"
+   - 定义 XML 节点结构
 
 
+```go
 
 
+package main
+
+import (
+	"encoding/xml"
+	"time"
+)
+
+type CDATA struct {
+	Content string `xml: ",cdata"` // 定义数据使用CDATA包含
+}
+
+type Comment struct {
+	Content string `xml:",comment"` // 定义数据为注释
+}
+
+type Address struct {
+	City   string `xml:"address>city"`
+	Street string `xml:"address>street"`
+	No     string `xml:"address>no"`
+}
+
+// 定义User结构体，并使用标签声明json属性
+type User struct {
+	ID           int       `xml:"id,attr"`             // xml节点属性，且属性名为id
+	Name         string    `xml:"name"`                // xml节点键重命名为name
+	Password     string    `xml:"-"`                   // xml序列化忽略该字段
+	gender       bool      `xml:"gender"`              // 非公开字段不进行序列化
+	Online       bool      `xml:"is_online,omitempty"` // xml节点重命名为is_online
+	RegisterTime time.Time `xml:"register_time"`       // xml节点重命名为register_time
+	Status       int       `xml:",omitempty"`          // xml节点使用属性名Status，当为0值是不进行序列化
+	Address
+	Desc    CDATA   `xml:"desc"`
+	Comment Comment `xml:"comment"`
+	// Extend string `xml:",innerxml"` // 定义数据不使用xml转义
+}
+
+type Root struct {
+	XMLName xml.Name `xml:"root"` // 定义根节点名称
+	User    []User   `xml:"User"` //
+}
+
+func main() {
+
+}
+
+```
